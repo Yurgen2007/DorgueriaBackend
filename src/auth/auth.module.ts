@@ -11,8 +11,8 @@ import { EmailService } from 'src/auth/email/email.service';
 @Global()
 @Module({
   controllers: [AuthController],
-  imports: [TypeOrmModule.forFeature([Usuarios,RolPermiso]),UsuariosModule],
-  providers: [AuthService, PermisoGuard,EmailService],
-  exports: [PermisoGuard,TypeOrmModule]
+  imports: [TypeOrmModule.forFeature([Usuarios, RolPermiso]), UsuariosModule],
+  providers: [AuthService, PermisoGuard, EmailService],
+  exports: [PermisoGuard, TypeOrmModule, EmailService]
 })
-export class AuthModule {}
+export class AuthModule { }

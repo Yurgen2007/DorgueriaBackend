@@ -15,8 +15,7 @@ export class Categorias {
   @Column('character varying', { name: 'nombre', nullable: true, length: 70 })
   nombre: string | null;
   
-  @Column( {type:'text', name: "codigo_unpsc", nullable:true})
-  codigoUNPSC:string
+
 
   @Column('boolean', { name: 'estado', nullable: true })
   estado: boolean | null;

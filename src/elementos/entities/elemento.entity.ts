@@ -13,7 +13,9 @@ import { Caracteristicas } from '../../caracteristicas/entities/caracteristica.e
 import { Categorias } from '../../categorias/entities/categoria.entity';
 import { UnidadesMedida } from '../../unidades-medida/entities/unidades-medida.entity';
 import { Inventarios } from '../../inventarios/entities/inventario.entity';
-// import { ElementImage } from './elemento-image.entity';
+import { Sitios } from '../../sitios/entities/sitio.entity';
+import { CodigoInventario } from '../../codigo-inventario/entities/codigo-inventario.entity';
+
 
 @Entity('elementos', { schema: 'public' })
 export class Elementos {
@@ -30,20 +32,14 @@ export class Elementos {
   })
   descripcion: string | null;
 
-  @Column('boolean', { name: 'perecedero', nullable: true })
-  perecedero: boolean | null;
-
-  @Column('boolean', { name: 'no_perecedero', nullable: true })
-  noPerecedero: boolean | null;
-
   @Column('boolean', { name: 'estado', nullable: true })
   estado: boolean | null;
 
-  @Column('date', { name: 'fecha_vencimiento', nullable: true })
-  fechaVencimiento: string | Date;
+  @Column('integer', { name: 'stock', default: 0 })
+  stock: number;
 
-  @Column({ type: 'boolean', name: 'baja', default: false })
-  baja: boolean
+  @Column({ name: 'fecha_vencimiento', type: 'date', nullable: true })
+  fechaVencimiento: Date;
 
   @Column('timestamp without time zone', {
     name: 'created_at',
@@ -73,6 +69,16 @@ export class Elementos {
   @JoinColumn([{ name: 'fk_unidad_medida', referencedColumnName: 'idUnidad' }])
   fkUnidadMedida: UnidadesMedida;
 
-  @OneToMany(() => Inventarios, (inventarios) => inventarios.fkElemento)
-  inventarios: Inventarios[];
+  @ManyToOne(() => Sitios, (sitios) => sitios.elementos)
+  @JoinColumn([{ name: 'fk_sitio', referencedColumnName: 'idSitio' }])
+  fkSitio: Sitios;
+
+  @ManyToOne(() => Inventarios, (inventarios) => inventarios.elementos)
+  @JoinColumn([{ name: 'fk_inventario', referencedColumnName: 'idInventario' }])
+  fkInventario: Inventarios;
+
+  @OneToMany(() => CodigoInventario, (codigos) => codigos.fkElemento)
+  codigos: CodigoInventario[];
+
+
 }

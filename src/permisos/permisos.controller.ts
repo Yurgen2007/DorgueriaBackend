@@ -27,4 +27,9 @@ export class PermisosController {
   update(@Param('idPermiso') idPermiso: number, @Body() updatePermisoDto: UpdatePermisoDto) {
     return this.permisosService.update(+idPermiso, updatePermisoDto);
   }
+
+  @Delete(':idPermiso')
+  remove(@Param('idPermiso') idPermiso: number) {
+    return this.permisosService.remove(+idPermiso);
+  }
 }

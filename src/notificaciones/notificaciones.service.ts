@@ -5,7 +5,9 @@ import { Notificaciones } from './entities/notificacione.entity';
 import { CreateNotificacioneDto, UpdateNotificacioneDto } from './dto';
 import { Usuarios } from 'src/usuarios/entities/usuario.entity';
 import { WebsocketGateway } from 'src/websocket/websocket.gateway';
-import { Inventarios } from 'src/inventarios/entities/inventario.entity';
+import { Elementos } from 'src/elementos/entities/elemento.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { EmailService } from 'src/auth/email/email.service';
 
 @Injectable()
 export class NotificacionesService {
@@ -14,10 +16,11 @@ export class NotificacionesService {
     private readonly notificacionRepository: Repository<Notificaciones>,
     @InjectRepository(Usuarios)
     private readonly usuarioRepository: Repository<Usuarios>,
-    @InjectRepository(Inventarios)
-    private readonly inventarioRepository: Repository<Inventarios>,
+    @InjectRepository(Elementos)
+    private readonly elementoRepository: Repository<Elementos>,
     private readonly websocketGateway: WebsocketGateway,
-  ) {}
+    private readonly emailService: EmailService,
+  ) { }
 
   async create(dto: CreateNotificacioneDto) {
     const usuario = await this.usuarioRepository.findOneByOrFail({
@@ -54,25 +57,23 @@ export class NotificacionesService {
       .map((n) => n.data?.idElemento)
       .filter((id) => !!id); // solo los que tengan idElemento
 
-    // Consultar estado de esos elementos en inventarios
-    const inventarios = await this.inventarioRepository.find({
+    // Consultar estado de esos elementos
+    const elementos = await this.elementoRepository.find({
       where:
         idsElementos.length > 0
-          ? { fkElemento: { idElemento: In(idsElementos) } }
+          ? { idElemento: In(idsElementos) }
           : {},
-      relations: ['fkElemento'],
     });
 
     // Crear un mapa de idElemento => estado
     const estadoPorElemento: Record<number, boolean> = {};
-    for (const inv of inventarios) {
-      const idEl = inv.fkElemento?.idElemento;
-      if (idEl && inv.estado === true) {
-        estadoPorElemento[idEl] = true;
+    for (const el of elementos) {
+      if (el.estado === true) {
+        estadoPorElemento[el.idElemento] = true;
       }
     }
 
-    // Filtrar las notificaciones con idElemento cuyo inventario esté activo, o que no tengan idElemento
+    // Filtrar las notificaciones con idElemento cuyo elemento esté activo, o que no tengan idElemento
     return notificaciones.filter((n) => {
       const idEl = n.data?.idElemento;
       return !idEl || estadoPorElemento[idEl] === true;
@@ -108,48 +109,48 @@ export class NotificacionesService {
     return this.notificacionRepository.save(notificacion);
   }
 
-async cambiarEstado(id: number, estado: 'aceptado' | 'cancelado') {
-  const notificacion = await this.findOne(id);
+  async cambiarEstado(id: number, estado: 'aceptado' | 'cancelado') {
+    const notificacion = await this.findOne(id);
 
-  if (!notificacion.requiereAccion) {
-    throw new Error('Esta notificación no requiere acción');
-  }
+    if (!notificacion.requiereAccion) {
+      throw new Error('Esta notificación no requiere acción');
+    }
 
-  // Actualizamos el estado
-  notificacion.estado = estado;
-  notificacion.leido = true;
+    // Actualizamos el estado
+    notificacion.estado = estado;
+    notificacion.leido = true;
 
-  // Guardamos la notificación actualizada
-  const notificacionActualizada = await this.notificacionRepository.save(notificacion);
+    // Guardamos la notificación actualizada
+    const notificacionActualizada = await this.notificacionRepository.save(notificacion);
 
-  // Obtenemos el usuario logueado que creó el movimiento desde la notificación original
-  const usuarioCreador = await this.usuarioRepository.findOne({
-    where: { idUsuario: notificacion.data.usuarioCreadorId }, // ← Guardaremos esto en data
-  });
-
-  if (usuarioCreador) {
-    // Creamos la respuesta para el creador del movimiento
-    const respuesta = this.notificacionRepository.create({
-      titulo: estado === 'aceptado' ? 'Movimiento aceptado ✅' : 'Movimiento rechazado ❌',
-      mensaje:
-        estado === 'aceptado'
-          ? `Tu movimiento  fue aceptado.`
-          : `Tu movimiento fue rechazado.`,
-      requiereAccion: false,
-      estado,
-      leido: false,
-      fkUsuario: usuarioCreador,
-      data: notificacion.data,
+    // Obtenemos el usuario logueado que creó el movimiento desde la notificación original
+    const usuarioCreador = await this.usuarioRepository.findOne({
+      where: { idUsuario: notificacion.data.usuarioCreadorId }, // ← Guardaremos esto en data
     });
 
-    await this.notificacionRepository.save(respuesta);
+    if (usuarioCreador) {
+      // Creamos la respuesta para el creador del movimiento
+      const respuesta = this.notificacionRepository.create({
+        titulo: estado === 'aceptado' ? 'Movimiento aceptado ✅' : 'Movimiento rechazado ❌',
+        mensaje:
+          estado === 'aceptado'
+            ? `Tu movimiento  fue aceptado.`
+            : `Tu movimiento fue rechazado.`,
+        requiereAccion: false,
+        estado,
+        leido: false,
+        fkUsuario: usuarioCreador,
+        data: notificacion.data,
+      });
 
-    // Emitimos la notificación en tiempo real al usuario creador
-    this.websocketGateway.emitirNotificacion(usuarioCreador.idUsuario, respuesta);
+      await this.notificacionRepository.save(respuesta);
+
+      // Emitimos la notificación en tiempo real al usuario creador
+      this.websocketGateway.emitirNotificacion(usuarioCreador.idUsuario, respuesta);
+    }
+
+    return notificacionActualizada;
   }
-
-  return notificacionActualizada;
-}
 
 
   async remove(id: number) {
@@ -307,13 +308,13 @@ async cambiarEstado(id: number, estado: 'aceptado' | 'cancelado') {
     }
   }
 
-  async notificarStockBajo(inventario: any) {
-    if (inventario.estado !== true) return;
-    if (inventario.stock <= 15) {
+  async notificarStockBajo(elemento: any) {
+    if (elemento.estado !== true) return;
+    if (elemento.stock <= 15) {
       const admins = await this.usuarioRepository.find({
         where: { fkRol: { nombre: 'Administrador' } },
       });
-      const mensaje = `Elemento con Stock Bajo "${inventario.fkElemento.nombre}"`;
+      const mensaje = `Elemento con Stock Bajo "${elemento.nombre}"`;
 
       for (const admin of admins) {
         console.log('👉 Enviando notificación a:', admin.idUsuario);
@@ -323,31 +324,31 @@ async cambiarEstado(id: number, estado: 'aceptado' | 'cancelado') {
           false,
           admin,
           {
-            idElemento: inventario.fkElemento.idElemento,
+            idElemento: elemento.idElemento,
           },
         );
       }
     }
   }
 
-  async notificarProximaCaducidad(inventario: any) {
-    if (inventario.estado !== true) return;
+  async notificarProximaCaducidad(elemento: any) {
+    if (elemento.estado !== true) return;
 
-    if (!inventario.fkElemento.fechaVencimiento) {
+    if (!elemento.fechaVencimiento) {
       return;
     }
 
     const hoy = new Date();
-    const fechaCaducidad = new Date(inventario.fkElemento.fechaVencimiento);
+    const fechaCaducidad = new Date(elemento.fechaVencimiento);
     const diasRestantes = Math.ceil(
       (fechaCaducidad.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24),
     );
 
-    if (diasRestantes <= 7 && diasRestantes >= 0) {
+    if (diasRestantes <= 15 && diasRestantes >= 0) {
       const admins = await this.usuarioRepository.find({
         where: { fkRol: { nombre: 'Administrador' } },
       });
-      const mensaje = `El elemento "${inventario.fkElemento.nombre}" caduca en ${diasRestantes} días.`;
+      const mensaje = `El elemento "${elemento.nombre}" caduca en ${diasRestantes} días.`;
 
       for (const admin of admins) {
         await this.enviarYGuardarNotificacion(
@@ -356,13 +357,24 @@ async cambiarEstado(id: number, estado: 'aceptado' | 'cancelado') {
           false,
           admin,
           {
-            idElemento: inventario.fkElemento.idElemento,
-            fechaCaducidad: inventario.fkElemento.fechaVencimiento,
+            idElemento: elemento.idElemento,
+            fechaCaducidad: elemento.fechaVencimiento,
           },
         );
+        // Enviar correo
+        try {
+          await this.emailService.sendMail({
+            to: admin.correo,
+            subject: 'Alerta de Caducidad - DiverfiestaSoft',
+            html: `<p>El elemento <strong>${elemento.nombre}</strong> caduca en <strong>${diasRestantes}</strong> días.</p>`,
+          });
+        } catch (error) {
+          console.error('Error enviando correo:', error);
+        }
       }
     }
   }
+
 
   async notificarMovimientoAceptado(movimiento: any) {
     if (!movimiento?.usuario) return;
@@ -404,13 +416,11 @@ async cambiarEstado(id: number, estado: 'aceptado' | 'cancelado') {
   }
 
   async verificarInventariosYNotificar() {
-    const inventarios = await this.inventarioRepository.find({
-      relations: ['fkElemento'],
-    });
+    const elementos = await this.elementoRepository.find();
 
-    for (const inventario of inventarios) {
-      await this.notificarStockBajo(inventario);
-      await this.notificarProximaCaducidad(inventario);
+    for (const el of elementos) {
+      await this.notificarStockBajo(el);
+      await this.notificarProximaCaducidad(el);
     }
   }
 }

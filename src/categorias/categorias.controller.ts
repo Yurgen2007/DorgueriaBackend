@@ -39,7 +39,12 @@ export class CategoriasController {
   }
 
   @Patch('estado/:idCategoria')
-  remove(@Param('idCategoria') idCategoria: string) {
+  updatestate(@Param('idCategoria') idCategoria: string) {
     return this.categoriasService.updatestate(+idCategoria);
+  }
+
+  @Delete(':idCategoria')
+  remove(@Param('idCategoria') idCategoria: string) {
+    return this.categoriasService.remove(+idCategoria);
   }
 }

@@ -69,4 +69,24 @@ export class CaracteristicasService {
     });
     return newCaracteristica;
   }
+
+  async remove(id: number) {
+    const caracteristica = await this.caracteristicasRepository.findOne({
+      where: { idCaracteristica: id },
+    });
+    if (!caracteristica)
+      throw new HttpException(
+        'Caracteristica no encontrada',
+        HttpStatus.NOT_FOUND,
+      );
+
+    const deleted = await this.caracteristicasRepository.delete(id);
+    if (!deleted.affected)
+      throw new HttpException(
+        'Error al eliminar caracteristica',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    return { message: 'Caracteristica eliminada correctamente' };
+  }
 }

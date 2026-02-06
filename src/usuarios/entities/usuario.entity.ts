@@ -5,10 +5,10 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
-import { Areas } from '../../areas/entities/area.entity';
-import { Movimientos } from '../../movimientos/entities/movimiento.entity';
-import { UsuarioFicha } from '../../usuario-ficha/entities/usuario-ficha.entity';
+import * as bcrypt from 'bcrypt';
 import { Roles } from '../../roles/entities/role.entity';
 import { Notificaciones } from '../../notificaciones/entities/notificacione.entity';
 
@@ -59,15 +59,6 @@ export class Usuarios {
   @Column('character varying', { name: 'perfil', nullable: true, length: 255 })
   perfil: string;
 
-  @OneToMany(() => Areas, (areas) => areas.fkUsuario)
-  areas: Areas[];
-
-  @OneToMany(() => Movimientos, (movimientos) => movimientos.fkUsuario)
-  movimientos: Movimientos[];
-
-  @OneToMany(() => UsuarioFicha, (usuarioFicha) => usuarioFicha.fkUsuario)
-  usuarioFichas: UsuarioFicha[];
-
   @ManyToOne(() => Roles, (roles) => roles.usuarios)
   @JoinColumn([{ name: 'fk_rol', referencedColumnName: 'idRol' }])
   fkRol: Roles;
@@ -75,5 +66,13 @@ export class Usuarios {
   @OneToMany(() => Notificaciones, (notificaciones) => notificaciones.fkUsuario)
   notificaciones: Notificaciones[];
   static nombre: string;
-  
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  async hashPassword() {
+    if (this.password && !this.password.startsWith('$2b$')) {
+      const saltRounds = 10;
+      this.password = await bcrypt.hash(this.password, saltRounds);
+    }
+  }
 }

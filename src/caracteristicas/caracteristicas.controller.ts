@@ -28,4 +28,8 @@ export class CaracteristicasController {
     return this.caracteristicasService.update(+id, updateCaracteristicaDto);
   }
 
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.caracteristicasService.remove(+id);
+  }
 }

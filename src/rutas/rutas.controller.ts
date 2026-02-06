@@ -32,4 +32,9 @@ export class RutasController {
   updatestate(@Param('id') id: string) {
     return this.rutasService.updatestate(+id);
   }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.rutasService.remove(+id);
+  }
 }

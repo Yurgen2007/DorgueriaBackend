@@ -53,4 +53,13 @@ export class PermisosService {
 
     return getPermisoById;
   }
+
+  async remove(idPermiso: number) {
+    const permiso = await this.permisoRepository.findOneBy({ idPermiso });
+    if (!permiso) {
+      throw new Error(`No se encontro el permiso con el id ${idPermiso} especificado`);
+    }
+    await this.permisoRepository.delete(idPermiso);
+    return { message: 'Permiso eliminado correctamente' };
+  }
 }

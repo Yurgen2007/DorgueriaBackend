@@ -53,4 +53,13 @@ export class RolesService {
 
     return this.rolRepository.save(getRolById);
   }
+
+  async remove(idRol: number) {
+    const rol = await this.rolRepository.findOneBy({ idRol });
+    if (!rol) {
+      throw new Error(`El rol con el id ${idRol} no existe`);
+    }
+    await this.rolRepository.delete(idRol);
+    return { message: 'Rol eliminado correctamente' };
+  }
 }

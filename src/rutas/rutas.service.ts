@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRutaDto } from './dto/create-ruta.dto';
 import { UpdateRutaDto } from './dto/update-ruta.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -60,5 +60,21 @@ export class RutasService {
     });
     if(!ruta) throw new HttpException("Ruta no encontrada", HttpStatus.NOT_FOUND)
     return this.rutasRepository.update(id,{estado : !(ruta.estado)})
+  }
+
+  async remove(id: number) {
+    const ruta = await this.rutasRepository.findOne({
+      where: {
+        idRuta: id
+      }
+    });
+    if(!ruta) throw new NotFoundException(`No se encontró la ruta con id ${id}`);
+
+    await this.rutasRepository.remove(ruta);
+
+    return {
+      status: 200,
+      message: 'Ruta eliminada correctamente',
+    };
   }
 }

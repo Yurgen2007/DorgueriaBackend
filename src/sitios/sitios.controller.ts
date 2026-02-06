@@ -7,7 +7,7 @@ import { Permiso } from 'src/auth/decorators/permiso.decorator';
 @UseGuards(JwtGuard, PermisoGuard)
 @Controller('sitios')
 export class SitiosController {
-  constructor(private readonly sitiosService: SitiosService) {}
+  constructor(private readonly sitiosService: SitiosService) { }
 
   @Post()
   @Permiso(14)
@@ -32,9 +32,9 @@ export class SitiosController {
     return this.sitiosService.update(+idSitio, updateSitioDto);
   }
 
-  @Patch('state/:idSitio')
+  @Delete(':idSitio')
   @Permiso(17)
-  status(@Param('idSitio') idSitio: string) {
-    return this.sitiosService.changeStatus(+idSitio);
+  remove(@Param('idSitio') idSitio: string) {
+    return this.sitiosService.remove(+idSitio);
   }
 }

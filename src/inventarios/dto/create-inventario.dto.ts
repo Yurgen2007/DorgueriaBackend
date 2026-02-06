@@ -1,17 +1,10 @@
-import { IsBoolean, IsNumber, IsString } from "class-validator";
+import { IsBoolean, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateInventarioDto {
-    @IsNumber()
-    stock:number
+    @IsString()
+    nombre: string
 
     @IsBoolean()
-    estado:boolean
-
-    @IsNumber()
-    fkElemento:number
-
-    @IsNumber()
-    fkSitio:number
-
-    
+    @IsOptional()
+    estado?: boolean
 }

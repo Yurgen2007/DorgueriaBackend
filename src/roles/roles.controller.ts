@@ -37,4 +37,10 @@ export class RolesController {
   status(@Param('idRol') idRol: number) {
     return this.rolesService.changeStatus(+idRol);
   }
+
+  @Delete(':idRol')
+  @Permiso(37)
+  remove(@Param('idRol') idRol: number) {
+    return this.rolesService.remove(+idRol);
+  }
 }

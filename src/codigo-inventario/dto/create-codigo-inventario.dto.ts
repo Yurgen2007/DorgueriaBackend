@@ -1,9 +1,9 @@
-import {  IsNumber, IsString } from "class-validator";
+import { IsNumber, IsString } from "class-validator";
 
 export class CreateCodigoInventarioDto {
     @IsString()
-    codigo:string
+    codigo: string
 
     @IsNumber()
-    fkInventario:number
+    fkElemento: number
 }

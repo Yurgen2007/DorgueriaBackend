@@ -1,21 +1,22 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { config } from 'dotenv';
 
-config();
+const dbHost = process.env.DB_HOST || 'localhost';
+const dbPort = parseInt(process.env.DB_PORT || '5432');
+const dbName = process.env.DB_NAME || 'drogueria_db';
+const dbUser = process.env.DB_USERNAME || 'postgres';
+const dbPass = process.env.DB_PASSWORD || '123';
 
-const AppDataSource = new DataSource({
+export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  database: process.env.DB_NAME,
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  entities: [__dirname + '/**/*.entity.{ts,js}'], // ✅ Ruta correcta y recursiva
-  migrations: [__dirname + '/migrations/*.{ts,js}'],
+  host: dbHost,
+  port: dbPort,
+  database: dbName,
+  username: dbUser,
+  password: dbPass,
   synchronize: false,
-  migrationsRun: false, // ✅ Solo ejecutamos migraciones manualmente
   logging: true,
+  entities: [__dirname + '/**/*.entity{.ts,.js}'],
+  migrations: [__dirname + '/migrations/*{.ts,.js}'],
+  subscribers: [],
 });
-
-export default AppDataSource;

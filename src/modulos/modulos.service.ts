@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Modulos } from './entities/modulo.entity';
@@ -59,5 +59,21 @@ export class ModulosService {
     });
     if(!existingModulo) throw new HttpException("Modulo no encontrado", HttpStatus.NOT_FOUND);
     return await this.modulosRepository.update(id,{estado: !existingModulo.estado});
+  }
+
+  async remove(id: number) {
+    const existingModulo = await this.modulosRepository.findOne({
+      where: {
+        idModulo: id
+      }
+    });
+    if(!existingModulo) throw new NotFoundException(`No se encontró el módulo con id ${id}`);
+
+    await this.modulosRepository.remove(existingModulo);
+
+    return {
+      status: 200,
+      message: 'Módulo eliminado correctamente',
+    };
   }
 }

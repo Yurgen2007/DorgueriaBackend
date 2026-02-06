@@ -19,9 +19,10 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migration:create": "npx typeorm-ts-node-commonjs migration:create src/migrations/",
-    "migration:generate": "npx typeorm-ts-node-commonjs migration:generate -d src/data-source.ts src/migrations/migration",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
-    "migration:revert": "npx typeorm migration:revert -d src/data-source.ts"
+    "migration:generate": "npx typeorm-ts-node-commonjs migration:generate -d src/data-source.ts src/migrations/",
+    "migration:run": "npx typeorm-ts-node-commonjs -d src/data-source.ts migration:run",
+    "migration:revert": "npx typeorm -d src/data-source.ts migration:revert",
+    "seed": "ts-node -r tsconfig-paths/register src/cli.ts seed:database"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -30,6 +31,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/platform-socket.io": "^11.1.3",
+    "@nestjs/schedule": "^6.1.1",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.3",
     "@types/bcrypt": "^5.0.2",

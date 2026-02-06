@@ -9,9 +9,6 @@ export class Caracteristicas {
   @Column('character varying', { name: 'nombre', nullable: true, length: 70 })
   nombre: string | null;
 
-  @Column('character varying', { name: 'simbolo', nullable: true, length: 50 })
-  simbolo: string;
-
   @Column('timestamp without time zone', {
     name: 'created_at',
     default: () => 'now()',

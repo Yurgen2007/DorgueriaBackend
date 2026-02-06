@@ -1,19 +1,12 @@
 import {
   Column,
   Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
 import { Inventarios } from "../../inventarios/entities/inventario.entity";
-import { Movimientos } from "../../movimientos/entities/movimiento.entity";
-import { Areas } from "../../areas/entities/area.entity";
-import { TipoSitios } from "../../tipos-sitio/entities/tipos-sitio.entity";
-import { Usuarios } from "src/usuarios/entities/usuario.entity";
-
+import { Elementos } from "../../elementos/entities/elemento.entity";
 
 @Entity("sitios", { schema: "public" })
 export class Sitios {
@@ -23,22 +16,11 @@ export class Sitios {
   @Column("character varying", { name: "nombre", nullable: true, length: 70 })
   nombre: string | null;
 
-  @Column("character varying", {
-    name: "persona_encargada",
-    nullable: true,
-    length: 70,
-  })
-  personaEncargada: string | null;
+  @Column("character varying", { name: "estante", nullable: true, length: 20 })
+  estante: string | null;
 
-  @Column("character varying", {
-    name: "ubicacion",
-    nullable: true,
-    length: 205,
-  })
-  ubicacion: string | null;
-
-  @Column("boolean", { name: "estado", nullable: true })
-  estado: boolean | null;
+  @Column("character varying", { name: "pasillo", nullable: true, length: 20 })
+  pasillo: string | null;
 
   @Column("timestamp without time zone", {
     name: "created_at",
@@ -46,25 +28,13 @@ export class Sitios {
   })
   createdAt: Date;
 
-  @UpdateDateColumn( {
+  @UpdateDateColumn({
     name: "updated_at",
-    type:"timestamp",
+    type: "timestamp",
     default: () => "now()",
   })
   updatedAt: Date;
 
-  @OneToMany(() => Inventarios, (inventarios) => inventarios.fkSitio)
-  inventarios: Inventarios[];
-
-  @OneToMany(() => Movimientos, (movimientos) => movimientos.fkSitio)
-  movimientos: Movimientos[];
-
-  @ManyToOne(() => Areas, (areas) => areas.sitios)
-  @JoinColumn([{ name: "fk_area", referencedColumnName: "idArea" }])
-  fkArea: Areas;
-
-  @ManyToOne(() => TipoSitios, (tipoSitios) => tipoSitios.sitios)
-  @JoinColumn([{ name: "fk_tipo_sitio", referencedColumnName: "idTipo" }])
-  fkTipoSitio: TipoSitios;
-
+  @OneToMany(() => Elementos, (elementos) => elementos.fkSitio)
+  elementos: Elementos[];
 }

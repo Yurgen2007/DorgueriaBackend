@@ -41,4 +41,9 @@ export class ModulosController {
   updateStatus(@Param('id') id: string) {
     return this.modulosService.updateStatus(+id);
   }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.modulosService.remove(+id);
+  }
 }

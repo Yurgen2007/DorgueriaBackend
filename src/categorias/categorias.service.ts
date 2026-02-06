@@ -42,4 +42,14 @@ export class CategoriasService {
       throw new HttpException('Categoria no encontrada', HttpStatus.NOT_FOUND);
     return this.categoriasRepository.update(id, { estado: !categoria.estado });
   }
+
+  async remove(id: number) {
+    const categoria = await this.categoriasRepository.findOne({
+      where: { idCategoria: id },
+    });
+    if (!categoria)
+      throw new HttpException('Categoria no encontrada', HttpStatus.NOT_FOUND);
+    await this.categoriasRepository.delete(id);
+    return { message: 'Categoria eliminada correctamente' };
+  }
 }

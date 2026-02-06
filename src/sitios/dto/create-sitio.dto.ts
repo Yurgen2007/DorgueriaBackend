@@ -1,24 +1,15 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateSitioDto {
     @IsString()
     @IsNotEmpty()
-    nombre:string
+    nombre: string
 
     @IsString()
-    @IsNotEmpty()
-    personaEncargada:string
+    @IsOptional()
+    estante?: string
 
     @IsString()
-    @IsNotEmpty()
-    ubicacion:string
-
-    @IsBoolean()
-    estado:boolean
-
-    @IsNumber()
-    fkArea:number
-
-    @IsNumber()
-    fkTipoSitio:number
+    @IsOptional()
+    pasillo?: string
 }

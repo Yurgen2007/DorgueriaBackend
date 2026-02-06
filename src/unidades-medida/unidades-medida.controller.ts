@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { UnidadesMedidaService } from './unidades-medida.service';
 import { CreateUnidadesMedidaDto, UpdateUnidadesMedidaDto } from './dto'; 
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
@@ -31,5 +31,10 @@ export class UnidadesMedidaController {
   @Patch('state/:idUnidad')
   status(@Param('idUnidad') idUnidad: number) {
     return this.unidadesMedidaService.changeStatus(+idUnidad);
+  }
+
+  @Delete(':idUnidad')
+  remove(@Param('idUnidad') idUnidad: number) {
+    return this.unidadesMedidaService.remove(+idUnidad);
   }
 }

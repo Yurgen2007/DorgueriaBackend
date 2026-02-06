@@ -10,13 +10,13 @@ export class CodigoInventarioService {
   constructor(
     @InjectRepository(CodigoInventario)
     private readonly codigoRepository: Repository<CodigoInventario>,
-  ) {}
+  ) { }
   async create(
     createCodigoInventarioDto: CreateCodigoInventarioDto,
   ): Promise<CodigoInventario> {
     const codigo = this.codigoRepository.create({
-      ...createCodigoInventarioDto,
-      fkInventario: { idInventario: createCodigoInventarioDto.fkInventario },
+      codigo: createCodigoInventarioDto.codigo,
+      fkElemento: { idElemento: createCodigoInventarioDto.fkElemento } as any,
     });
 
     return await this.codigoRepository.save(codigo);
@@ -24,7 +24,7 @@ export class CodigoInventarioService {
 
   async findAll(): Promise<CodigoInventario[]> {
     return await this.codigoRepository.find({
-      relations: ['fkInventario', 'fkMovimiento'],
+      relations: ['fkElemento'],
     });
   }
 
@@ -54,9 +54,9 @@ export class CodigoInventarioService {
       throw new Error(`No se encontro el codigo correspondiente a este id`);
     }
 
-  Object.assign(getCodigoById, updateCodigoInventarioDto);
+    Object.assign(getCodigoById, updateCodigoInventarioDto);
 
-  const updatedCodigo = await this.codigoRepository.save(getCodigoById);
-  return updatedCodigo;
+    const updatedCodigo = await this.codigoRepository.save(getCodigoById);
+    return updatedCodigo;
   }
 }

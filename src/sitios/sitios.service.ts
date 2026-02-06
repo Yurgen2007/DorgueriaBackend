@@ -11,37 +11,19 @@ export class SitiosService {
   constructor(
     @InjectRepository(Sitios)
     private readonly sitioRepository: Repository<Sitios>,
-    @InjectRepository(Elementos)
-    private readonly elementoRepository: Repository<Elementos>,
-    @InjectRepository(Inventarios)
-    private readonly inventarioRepository: Repository<Inventarios>,
-  ) {}
+  ) { }
   async create(createSitioDto: CreateSitioDto): Promise<Sitios> {
     const sitio = this.sitioRepository.create({
-      ...createSitioDto,
-      fkArea: { idArea: createSitioDto.fkArea },
-      fkTipoSitio: { idTipo: createSitioDto.fkTipoSitio },
+      nombre: createSitioDto.nombre,
+      estante: createSitioDto.estante,
+      pasillo: createSitioDto.pasillo,
     });
 
-    const nuevoSitio = await this.sitioRepository.save(sitio);
-
-    const elemento = await this.elementoRepository.find();
-
-    const asignacionElementoSitio = elemento.map((elemento) => {
-      return this.inventarioRepository.create({
-        fkSitio: nuevoSitio,
-        fkElemento: elemento,
-        stock: 0,
-        estado: false,
-      });
-    });
-
-    await this.inventarioRepository.save(asignacionElementoSitio);
-    return nuevoSitio;
+    return await this.sitioRepository.save(sitio);
   }
 
   async findAll(): Promise<Sitios[]> {
-    return await this.sitioRepository.find({ relations: ['fkArea'] });
+    return await this.sitioRepository.find({ relations: [] });
   }
 
   async findOne(idSitio: number): Promise<Sitios> {
@@ -60,28 +42,24 @@ export class SitiosService {
     });
 
     if (!getSitioById) {
-      throw new Error(`No existe el area con el id ${idSitio}`);
+      throw new Error(`No existe el sitio con el id ${idSitio}`);
     }
 
     await this.sitioRepository.update(idSitio, {
       nombre: updateSitioDto.nombre,
-      personaEncargada: updateSitioDto.personaEncargada,
-      ubicacion: updateSitioDto.ubicacion,
+      estante: updateSitioDto.estante,
+      pasillo: updateSitioDto.pasillo,
     });
 
     return getSitioById;
   }
 
-  async changeStatus(idSitio: number) {
-    const getSitio = await this.sitioRepository.findOneBy({ idSitio });
-
-    if (!getSitio) {
-      throw new Error(`No se encuentra el sitio con el id ${idSitio}`);
+  async remove(idSitio: number) {
+    const sitio = await this.sitioRepository.findOneBy({ idSitio });
+    if (!sitio) {
+      throw new Error(`No existe el sitio con el id ${idSitio}`);
     }
-
-    getSitio.estado = !getSitio.estado;
-
-    return this.sitioRepository.save(getSitio);
+    await this.sitioRepository.delete(idSitio);
+    return { message: 'Sitio eliminado correctamente' };
   }
 }
-  

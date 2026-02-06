@@ -31,7 +31,7 @@ export class EmailService {
     }
 
 
-    private sendMail(options: SendMailOptions) {
+    public async sendMail(options: SendMailOptions) {
         this.logger.log('Email sent out to', options.to);
         return this.nodemailerTransport.sendMail(options);
     }

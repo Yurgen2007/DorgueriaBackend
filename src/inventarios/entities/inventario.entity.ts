@@ -3,27 +3,23 @@ import {
   BeforeUpdate,
   Column,
   Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Elementos } from '../../elementos/entities/elemento.entity';
-import { Sitios } from '../../sitios/entities/sitio.entity';
-import { Movimientos } from '../../movimientos/entities/movimiento.entity';
 import { CodigoInventario } from '../../codigo-inventario/entities/codigo-inventario.entity';
+
 
 @Entity('inventarios', { schema: 'public' })
 export class Inventarios {
   @PrimaryGeneratedColumn({ type: 'integer', name: 'id_inventario' })
   idInventario: number;
 
-  @Column('integer', { name: 'stock', default:0 })
-  stock: number;
+  @Column('character varying', { name: 'nombre', nullable: true, length: 100 })
+  nombre: string;
 
-  @Column('boolean', { name: 'estado', default:true })
+  @Column('boolean', { name: 'estado', default: true })
   estado: boolean;
 
   @Column('timestamp without time zone', {
@@ -34,22 +30,11 @@ export class Inventarios {
 
   @UpdateDateColumn({
     name: "updated_at",
-    type:'timestamp',
+    type: 'timestamp',
     default: () => "now()",
   })
   updatedAt: Date;
 
-  @ManyToOne(() => Elementos, (elementos) => elementos.inventarios)
-  @JoinColumn([{ name: 'fk_elemento', referencedColumnName: 'idElemento' }])
-  fkElemento: Elementos;
-
-  @ManyToOne(() => Sitios, (sitios) => sitios.inventarios)
-  @JoinColumn([{ name: 'fk_sitio', referencedColumnName: 'idSitio' }])
-  fkSitio: Sitios;
-
-  @OneToMany(() => Movimientos, (movimientos) => movimientos.fkInventario)
-  movimientos: Movimientos[];
-
-  @OneToMany(() => CodigoInventario, (codigos) => codigos.fkInventario)
-  codigos: CodigoInventario[];
+  @OneToMany(() => Elementos, (elementos) => elementos.fkInventario)
+  elementos: Elementos[];
 }

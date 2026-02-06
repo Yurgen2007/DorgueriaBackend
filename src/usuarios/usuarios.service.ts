@@ -16,13 +16,8 @@ export class UsuariosService {
   ) { }
 
   async create(newUser: CreateUsuarioDto, filename?: string) {
-
-    const saltRounds = 10;
-    const hash = await bcrypt.hash(newUser.password, saltRounds);
-
     const Usuario = this.usuariosRepository.create({
       ...newUser,
-      password: hash,
       perfil: filename ?? "defaultPerfil.png",
       fkRol: { idRol: newUser.fkRol }
     });
@@ -84,10 +79,9 @@ export class UsuariosService {
     for (const row of jsonData) {
       const usuario = row as CreateUsuarioDto;
       const userPass = usuario.nombre.slice(0, 1) + usuario.apellido.slice(0, 1) + usuario.documento;
-      const passwordHash = await bcrypt.hash(userPass, 12);
       const createdUser = await this.usuariosRepository.save({
         ...usuario,
-        password: passwordHash,
+        password: userPass,
         fkRol: { idRol: 2 },
         estado: true
       })
@@ -103,8 +97,8 @@ export class UsuariosService {
         fkRol: true
       }
     });
-    const mappedUsers = rawUsers.map(user=> {
-      return {...user, fkRol: user.fkRol.idRol};
+    const mappedUsers = rawUsers.map(user => {
+      return { ...user, fkRol: user.fkRol.idRol };
     })
     return mappedUsers
   }
@@ -137,7 +131,6 @@ export class UsuariosService {
 
 
   async updatePerfil(userId: number, updatePerfil: UpdatePerfilDto) {
-    if (updatePerfil.password) updatePerfil.password = await bcrypt.hash(updatePerfil.password, 10);
     await this.usuariosRepository.update(userId, updatePerfil)
     await this.usuariosRepository.findOne({
       where: { idUsuario: userId },

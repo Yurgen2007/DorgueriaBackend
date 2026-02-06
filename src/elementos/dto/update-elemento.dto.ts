@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateElementoDto {
   @IsString()
@@ -23,4 +23,16 @@ export class UpdateElementoDto {
   @IsNumber()
   @IsOptional()
   fkCaracteristica?: number;
+
+  @IsNumber()
+  @IsOptional()
+  fkSitio: number;
+
+  @IsNumber()
+  @IsOptional()
+  fkInventario?: number;
+
+  @IsNumber()
+  @IsOptional()
+  stock?: number;
 }

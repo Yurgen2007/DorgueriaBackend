@@ -5,9 +5,6 @@ export class CreateCategoriaDto {
   @MinLength(2)
   nombre: string;
 
-  @IsString()
-  @MinLength(2)
-  codigoUNPSC: string;
 
   @IsBoolean()
   estado: boolean;

@@ -53,4 +53,13 @@ export class UnidadesMedidaService {
     
     return this.unidadRepository.save(getUnidadById);
   }
+
+  async remove(idUnidad: number) {
+    const unidad = await this.unidadRepository.findOneBy({ idUnidad });
+    if (!unidad) {
+      throw new Error(`No se encontro la unidad con ese id`);
+    }
+    await this.unidadRepository.delete(idUnidad);
+    return { message: 'Unidad eliminada correctamente' };
+  }
 }
