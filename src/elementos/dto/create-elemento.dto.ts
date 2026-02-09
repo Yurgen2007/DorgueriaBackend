@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { IsBoolean, IsNumber, IsOptional, IsString, Min, Matches } from "class-validator";
 
 export class CreateElementoDto {
 
@@ -25,6 +25,12 @@ export class CreateElementoDto {
   @IsString()
   @IsOptional()
   fechaVencimiento?: string;
+
+  @IsString()
+  @Matches(/^(\d{8}|\d{12}|\d{13})$/, {
+    message: 'Código de barras inválido. Debe tener 8, 12 o 13 dígitos',
+  })
+  codigoBarras: string;
 
   @IsNumber()
   fkSitio: number;

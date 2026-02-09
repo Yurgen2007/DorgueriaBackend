@@ -61,7 +61,7 @@ export class UsuariosController {
   @Patch('updatefoto')
   @UseInterceptors(FileInterceptor('perfil', {
     storage: diskStorage({
-      destination: './public/perfiles',
+      destination: './public/img/perfiles',
       filename: (req, file, cb) => {
         const ext = extname(file.originalname);
         const filename = `${Date.now()}-${Math.floor(Math.random()*(100))}-${ext}`;

@@ -52,6 +52,7 @@ export class ElementosController {
       noPerecedero,
       estado,
       fechaVencimiento,
+      codigoBarras,
       fkCategoria,
       fkUnidadMedida,
       fkCaracteristica,
@@ -64,6 +65,7 @@ export class ElementosController {
       nombre,
       descripcion,
       estado: estado === 'true' || estado === true,
+      codigoBarras,
       fkCategoria: Number(fkCategoria),
       fkUnidadMedida: Number(fkUnidadMedida),
       fkCaracteristica: fkCaracteristica ? Number(fkCaracteristica) : undefined,
@@ -139,11 +141,13 @@ export class ElementosController {
   findByInventario(
     @Param('idInventario', ParseIntPipe) idInventario: number,
     @Query('nombre') nombre?: string,
+    @Query('codigoBarras') codigoBarras?: string,
     @Query('categoria') categoria?: string,
     @Query('caracteristica') caracteristica?: string,
   ) {
     const filtros = {
       nombre,
+      codigoBarras,
       categoria: categoria ? Number(categoria) : undefined,
       caracteristica: caracteristica ? Number(caracteristica) : undefined,
     };

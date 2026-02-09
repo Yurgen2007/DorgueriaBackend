@@ -8,6 +8,7 @@ import { WebsocketGateway } from 'src/websocket/websocket.gateway';
 import { Elementos } from 'src/elementos/entities/elemento.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { EmailService } from 'src/auth/email/email.service';
+import { stockBajoEmail, caducidadEmail } from 'src/auth/email/mail.body';
 
 @Injectable()
 export class NotificacionesService {
@@ -73,7 +74,7 @@ export class NotificacionesService {
       }
     }
 
-    // Filtrar las notificaciones con idElemento cuyo elemento esté activo, o que no tengan idElemento
+    // Filtrar las notificaciones con idElemento cuyo elemento este activo, o que no tengan idElemento
     return notificaciones.filter((n) => {
       const idEl = n.data?.idElemento;
       return !idEl || estadoPorElemento[idEl] === true;
@@ -87,7 +88,7 @@ export class NotificacionesService {
     });
 
     if (!notificacion) {
-      throw new NotFoundException('Notificación no encontrada');
+      throw new NotFoundException('Notificacion no encontrada');
     }
 
     return notificacion;
@@ -104,34 +105,33 @@ export class NotificacionesService {
   }
 
   async marcarComoLeida(id: number) {
-    const notificacion = await this.findOne(id);
-    notificacion.leido = true;
-    return this.notificacionRepository.save(notificacion);
+    // En lugar de marcar como leida, eliminamos la notificacion
+    return this.remove(id);
   }
 
   async cambiarEstado(id: number, estado: 'aceptado' | 'cancelado') {
     const notificacion = await this.findOne(id);
 
     if (!notificacion.requiereAccion) {
-      throw new Error('Esta notificación no requiere acción');
+      throw new Error('Esta notificacion no requiere accion');
     }
 
     // Actualizamos el estado
     notificacion.estado = estado;
     notificacion.leido = true;
 
-    // Guardamos la notificación actualizada
+    // Guardamos la notificacion actualizada
     const notificacionActualizada = await this.notificacionRepository.save(notificacion);
 
-    // Obtenemos el usuario logueado que creó el movimiento desde la notificación original
+    // Obtenemos el usuario logueado que creo el movimiento desde la notificacion original
     const usuarioCreador = await this.usuarioRepository.findOne({
-      where: { idUsuario: notificacion.data.usuarioCreadorId }, // ← Guardaremos esto en data
+      where: { idUsuario: notificacion.data.usuarioCreadorId }, // <- Guardaremos esto en data
     });
 
     if (usuarioCreador) {
       // Creamos la respuesta para el creador del movimiento
       const respuesta = this.notificacionRepository.create({
-        titulo: estado === 'aceptado' ? 'Movimiento aceptado ✅' : 'Movimiento rechazado ❌',
+        titulo: estado === 'aceptado' ? 'Movimiento aceptado' : 'Movimiento rechazado',
         mensaje:
           estado === 'aceptado'
             ? `Tu movimiento  fue aceptado.`
@@ -145,7 +145,7 @@ export class NotificacionesService {
 
       await this.notificacionRepository.save(respuesta);
 
-      // Emitimos la notificación en tiempo real al usuario creador
+      // Emitimos la notificacion en tiempo real al usuario creador
       this.websocketGateway.emitirNotificacion(usuarioCreador.idUsuario, respuesta);
     }
 
@@ -157,7 +157,7 @@ export class NotificacionesService {
     const existe = await this.notificacionRepository.findOne({
       where: { idNotificacion: id },
     });
-    if (!existe) throw new NotFoundException('Notificación no encontrada');
+    if (!existe) throw new NotFoundException('Notificacion no encontrada');
 
     return this.notificacionRepository.remove(existe);
   }
@@ -181,7 +181,7 @@ export class NotificacionesService {
     });
     const guardada = await this.notificacionRepository.save(notificacion);
 
-    console.log('📣 Emisión WS:', {
+    console.log('Emision WS:', {
       usuario: usuario.idUsuario,
       notificacion: guardada,
     });
@@ -190,33 +190,33 @@ export class NotificacionesService {
   }
 
   async notificarMovimientoPendiente(movimiento: any) {
-    console.log('📥 Iniciando notificación de movimiento pendiente');
-    console.log('👉 Tipo de movimiento recibido:', movimiento.tipo?.nombre);
+    console.log('Iniciando notificacion de movimiento pendiente');
+    console.log('Tipo de movimiento recibido:', movimiento.tipo?.nombre);
     console.log(
-      '👉 Usuario que creó el movimiento:',
+      'Usuario que creo el movimiento:',
       movimiento.usuario?.nombre,
       `(ID: ${movimiento.usuario?.idUsuario})`,
     );
 
     const tipoNombre = movimiento.tipo?.nombre?.toLowerCase?.();
-    console.log('🔍 tipoNombre (normalizado):', tipoNombre);
+    console.log('tipoNombre (normalizado):', tipoNombre);
 
     if (!tipoNombre) {
       console.log(
-        '⚠️ No se pudo determinar el tipo de movimiento. Cancelando notificación.',
+        'No se pudo determinar el tipo de movimiento. Cancelando notificacion.',
       );
       return;
     }
 
     if (!['salida', 'prestamo'].includes(tipoNombre)) {
       console.log(
-        `⚠️ Tipo de movimiento "${tipoNombre}" no requiere notificación pendiente.`,
+        `Tipo de movimiento "${tipoNombre}" no requiere notificacion pendiente.`,
       );
       return;
     }
 
     console.log(
-      `✅ Tipo "${tipoNombre}" requiere notificación. Buscando receptores...`,
+      `Tipo "${tipoNombre}" requiere notificacion. Buscando receptores...`,
     );
 
     const receptores = await this.usuarioRepository.find({
@@ -228,25 +228,20 @@ export class NotificacionesService {
     });
 
     console.log(
-      '👥 Receptores encontrados:',
+      'Receptores encontrados:',
       receptores.map((r) => `${r.nombre} (${r.fkRol?.nombre})`),
     );
 
     if (!receptores || receptores.length === 0) {
-      console.log('⚠️ No se encontraron receptores para notificación.');
+      console.log('No se encontraron receptores para notificacion.');
       return;
     }
 
-    const mensaje = `Movimiento de tipo ${movimiento.tipo.nombre} realizado por el usuario ${movimiento.usuario.nombre}. Requiere revisión.`;
+    const mensaje = `Movimiento de tipo ${movimiento.tipo.nombre} realizado por el usuario ${movimiento.usuario.nombre}. Requiere revision.`;
 
     for (const user of receptores) {
-      // if (user.idUsuario === movimiento.usuario.idUsuario) {
-      //   console.log(`⏭️ Omitiendo usuario ${user.nombre} (es el mismo que creó el movimiento)`);
-      //   continue;
-      // }
-
       console.log(
-        `📤 Enviando notificación a: ${user.nombre} (ID: ${user.idUsuario})`,
+        `Enviando notificacion a: ${user.nombre} (ID: ${user.idUsuario})`,
       );
 
       await this.enviarYGuardarNotificacion(
@@ -258,10 +253,10 @@ export class NotificacionesService {
         'enProceso',
       );
 
-      console.log(`✅ Notificación enviada a ${user.nombre}`);
+      console.log(`Notificacion enviada a ${user.nombre}`);
     }
 
-    console.log('🎉 Notificación de movimiento pendiente finalizada.');
+    console.log('Notificacion de movimiento pendiente finalizada.');
   }
 
   async notificarIngreso(movimiento: any) {
@@ -308,33 +303,75 @@ export class NotificacionesService {
     }
   }
 
+  // Metodo para buscar administradores de forma case-insensitive
+  private async buscarAdministradores(): Promise<Usuarios[]> {
+    return this.usuarioRepository
+      .createQueryBuilder('usuario')
+      .innerJoin('usuario.fkRol', 'rol')
+      .where('LOWER(rol.nombre) = :nombre', { nombre: 'administrador' })
+      .getMany();
+  }
+
   async notificarStockBajo(elemento: any) {
-    if (elemento.estado !== true) return;
-    if (elemento.stock <= 15) {
-      const admins = await this.usuarioRepository.find({
-        where: { fkRol: { nombre: 'Administrador' } },
-      });
-      const mensaje = `Elemento con Stock Bajo "${elemento.nombre}"`;
+    // Verificar si el elemento esta activo (estado true o null)
+    if (elemento.estado === false) {
+      console.log(`Elemento ${elemento.nombre} esta inactivo, saltando notificacion de stock`);
+      return;
+    }
+    
+    console.log(`Verificando stock bajo para: ${elemento.nombre}, stock actual: ${elemento.stock}`);
+    
+    if (elemento.stock <= 5) {
+      console.log(`Stock bajo detectado: ${elemento.nombre} tiene ${elemento.stock} unidades`);
+
+      const admins = await this.buscarAdministradores();
+
+      if (admins.length === 0) {
+        console.log('No hay administradores para notificar stock bajo');
+        return;
+      }
+
+      const mensaje = `Stock Bajo: El elemento "${elemento.nombre}" tiene ${elemento.stock} unidades.`;
 
       for (const admin of admins) {
-        console.log('👉 Enviando notificación a:', admin.idUsuario);
+        console.log('Enviando notificacion de stock a:', admin.idUsuario);
         await this.enviarYGuardarNotificacion(
-          'Stock bajo',
+          '⚠️ Stock bajo',
           mensaje,
           false,
           admin,
           {
             idElemento: elemento.idElemento,
+            stock: elemento.stock,
+            nombreElemento: elemento.nombre,
           },
         );
+        // Enviar correo
+        try {
+          await this.emailService.sendMail({
+            to: admin.correo,
+            subject: '⚠️ Alerta de Stock Bajo - FarmaMedica',
+            html: stockBajoEmail(elemento.nombre, elemento.stock),
+          });
+          console.log(`Correo de stock bajo enviado a ${admin.correo}`);
+        } catch (error) {
+          console.error('Error enviando correo de stock bajo:', error);
+        }
       }
+    } else {
+      console.log(`Stock OK: ${elemento.nombre} tiene ${elemento.stock} unidades (umbral: 5)`);
     }
   }
 
   async notificarProximaCaducidad(elemento: any) {
-    if (elemento.estado !== true) return;
+    // Verificar si el elemento esta activo (estado true o null)
+    if (elemento.estado === false) {
+      console.log(`Elemento ${elemento.nombre} esta inactivo, saltando notificacion de caducidad`);
+      return;
+    }
 
     if (!elemento.fechaVencimiento) {
+      console.log(`Elemento ${elemento.nombre} no tiene fecha de vencimiento`);
       return;
     }
 
@@ -344,34 +381,49 @@ export class NotificacionesService {
       (fechaCaducidad.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24),
     );
 
+    console.log(`Verificando caducidad para: ${elemento.nombre}, dias restantes: ${diasRestantes}`);
+
     if (diasRestantes <= 15 && diasRestantes >= 0) {
-      const admins = await this.usuarioRepository.find({
-        where: { fkRol: { nombre: 'Administrador' } },
-      });
-      const mensaje = `El elemento "${elemento.nombre}" caduca en ${diasRestantes} días.`;
+      console.log(`Caducidad proxima: ${elemento.nombre} caduca en ${diasRestantes} dias`);
+
+      const admins = await this.buscarAdministradores();
+
+      if (admins.length === 0) {
+        console.log('No hay administradores para notificar caducidad');
+        return;
+      }
+
+      const mensaje = `El elemento "${elemento.nombre}" caduca en ${diasRestantes} dias (${fechaCaducidad.toLocaleDateString()}).`;
 
       for (const admin of admins) {
         await this.enviarYGuardarNotificacion(
-          'Elemento por caducar',
+          '🗓️ Elemento por caducar',
           mensaje,
           false,
           admin,
           {
             idElemento: elemento.idElemento,
             fechaCaducidad: elemento.fechaVencimiento,
+            diasRestantes,
+            nombreElemento: elemento.nombre,
           },
         );
         // Enviar correo
         try {
           await this.emailService.sendMail({
             to: admin.correo,
-            subject: 'Alerta de Caducidad - DiverfiestaSoft',
-            html: `<p>El elemento <strong>${elemento.nombre}</strong> caduca en <strong>${diasRestantes}</strong> días.</p>`,
+            subject: '🗓️ Alerta de Caducidad Proxima - FarmaMedica',
+            html: caducidadEmail(elemento.nombre, diasRestantes, elemento.fechaVencimiento),
           });
+          console.log(`Correo de caducidad enviado a ${admin.correo}`);
         } catch (error) {
-          console.error('Error enviando correo:', error);
+          console.error('Error enviando correo de caducidad:', error);
         }
       }
+    } else if (diasRestantes > 15) {
+      console.log(`Caducidad OK: ${elemento.nombre} tiene ${diasRestantes} dias (umbral: 15)`);
+    } else {
+      console.log(`Elemento ${elemento.nombre} ya vencio (hace ${Math.abs(diasRestantes)} dias)`);
     }
   }
 
@@ -404,7 +456,7 @@ export class NotificacionesService {
     const mensaje = `Recuerda devolver el elemento "${movimiento.elemento.nombre}" antes del ${fecha}.`;
 
     await this.enviarYGuardarNotificacion(
-      'Préstamo registrado',
+      'Prestamo registrado',
       mensaje,
       false,
       movimiento.usuario,
@@ -416,11 +468,20 @@ export class NotificacionesService {
   }
 
   async verificarInventariosYNotificar() {
+    console.log('Iniciando verificacion de inventarios...');
+    
     const elementos = await this.elementoRepository.find();
-
+    console.log(`Elementos encontrados: ${elementos.length}`);
+    
     for (const el of elementos) {
+      console.log(`\nVerificando elemento: ${el.nombre} (ID: ${el.idElemento})`);
+      console.log(`   Stock: ${el.stock}, Estado: ${el.estado}`);
+      console.log(`   FechaVencimiento: ${el.fechaVencimiento}`);
+      
       await this.notificarStockBajo(el);
       await this.notificarProximaCaducidad(el);
     }
+    
+    console.log('\nVerificacion de inventarios completada');
   }
 }

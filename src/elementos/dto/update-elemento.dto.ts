@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsNumber, IsOptional, IsString, Matches } from 'class-validator';
 
 export class UpdateElementoDto {
   @IsString()
@@ -7,6 +7,9 @@ export class UpdateElementoDto {
   @IsString()
   @IsOptional()
   descripcion: string;
+
+  @IsBoolean()
+  estado: boolean;
 
   @IsString()
   @IsOptional()
@@ -35,4 +38,15 @@ export class UpdateElementoDto {
   @IsNumber()
   @IsOptional()
   stock?: number;
+
+  @IsString()
+  @IsOptional()
+  @Matches(/^(\d{8}|\d{12}|\d{13})?$/, {
+    message: 'Código de barras inválido. Debe tener 8, 12 o 13 dígitos',
+  })
+  codigoBarras?: string;
+
+  @IsDateString()
+  @IsOptional()
+  fechaVencimiento?: string;
 }

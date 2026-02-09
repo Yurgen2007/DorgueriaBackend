@@ -56,9 +56,20 @@ export class ElementosService {
       fkSitio: { idSitio: Number(createElementoDto.fkSitio) },
       fkInventario: { idInventario: Number(createElementoDto.fkInventario) },
       stock: createElementoDto.stock ?? 0,
+      codigoBarras: createElementoDto.codigoBarras ?? null,
     });
 
     const nuevoElemento = await this.elementoRepository.save(elemento);
+
+    // Verificar y enviar notificaciones automáticamente
+    console.log(`\nVerificando notificaciones para nuevo elemento: ${nuevoElemento.nombre} (ID: ${nuevoElemento.idElemento})`);
+    console.log(`   Stock: ${nuevoElemento.stock}, FechaVencimiento: ${nuevoElemento.fechaVencimiento}`);
+    
+    // Verificar notificación de stock bajo
+    await this.notificacionesService.notificarStockBajo(nuevoElemento);
+    
+    // Verificar notificación de próxima caducidad
+    await this.notificacionesService.notificarProximaCaducidad(nuevoElemento);
 
     return nuevoElemento;
   }
@@ -85,29 +96,71 @@ export class ElementosService {
   }
 
   async update(idElemento: number, updateElementoDto: UpdateElementoDto) {
-    const getElementoById = await this.elementoRepository.findOne({
+    console.log('Update DTO:', updateElementoDto);
+    
+    const elemento = await this.elementoRepository.findOne({
       where: { idElemento },
+      relations: ['fkCategoria', 'fkUnidadMedida', 'fkCaracteristica', 'fkSitio', 'fkInventario'],
     });
 
-    if (!getElementoById) {
+    if (!elemento) {
       throw new Error(
         `No se encontró el elemento, el id ${idElemento} no existe`,
       );
     }
 
+    // Actualizar campos simples con query directo para manejar null correctamente
     await this.elementoRepository.update(idElemento, {
       nombre: updateElementoDto.nombre,
       descripcion: updateElementoDto.descripcion,
-      imagen: updateElementoDto.imagen,
-      stock: updateElementoDto.stock,
-      fkCategoria: updateElementoDto.fkCategoria ? { idCategoria: updateElementoDto.fkCategoria } : undefined,
-      fkUnidadMedida: updateElementoDto.fkUnidadMedida ? { idUnidad: updateElementoDto.fkUnidadMedida } : undefined,
-      fkCaracteristica: updateElementoDto.fkCaracteristica ? { idCaracteristica: updateElementoDto.fkCaracteristica } : undefined,
-      fkSitio: updateElementoDto.fkSitio ? { idSitio: updateElementoDto.fkSitio } : undefined,
-      fkInventario: updateElementoDto.fkInventario ? { idInventario: updateElementoDto.fkInventario } : undefined,
+      estado: updateElementoDto.estado,
+      codigoBarras: updateElementoDto.codigoBarras || null,
+      stock: updateElementoDto.stock ?? elemento.stock,
     });
 
-    return { status: 200, message: 'Datoactualizados con exito' };
+    // Actualizar fecha de vencimiento independientemente de si viene vacía o no
+    if (updateElementoDto.fechaVencimiento !== undefined) {
+      const fechaVenc = updateElementoDto.fechaVencimiento 
+        ? new Date(updateElementoDto.fechaVencimiento) 
+        : null;
+      await this.elementoRepository.update(idElemento, { fechaVencimiento: fechaVenc as any });
+    }
+
+    // Actualizar relaciones (solo si vienen definidas)
+    if (updateElementoDto.fkCategoria) {
+      await this.elementoRepository.update(idElemento, { fkCategoria: { idCategoria: updateElementoDto.fkCategoria } });
+    }
+    if (updateElementoDto.fkUnidadMedida) {
+      await this.elementoRepository.update(idElemento, { fkUnidadMedida: { idUnidad: updateElementoDto.fkUnidadMedida } });
+    }
+    if (updateElementoDto.fkCaracteristica !== undefined) {
+      const fkCarac = updateElementoDto.fkCaracteristica 
+        ? { idCaracteristica: updateElementoDto.fkCaracteristica } 
+        : null;
+      await this.elementoRepository.update(idElemento, { fkCaracteristica: fkCarac as any });
+    }
+    if (updateElementoDto.fkSitio) {
+      await this.elementoRepository.update(idElemento, { fkSitio: { idSitio: updateElementoDto.fkSitio } });
+    }
+    if (updateElementoDto.fkInventario !== undefined) {
+      const fkInv = updateElementoDto.fkInventario 
+        ? { idInventario: updateElementoDto.fkInventario } 
+        : null;
+      await this.elementoRepository.update(idElemento, { fkInventario: fkInv as any });
+    }
+
+    // Obtener el elemento actualizado para las notificaciones
+    const elementoActualizado = await this.elementoRepository.findOne({
+      where: { idElemento },
+      relations: ['fkCategoria', 'fkUnidadMedida', 'fkCaracteristica', 'fkSitio', 'fkInventario'],
+    });
+
+    if (elementoActualizado) {
+      await this.notificacionesService.notificarStockBajo(elementoActualizado);
+      await this.notificacionesService.notificarProximaCaducidad(elementoActualizado);
+    }
+
+    return { status: 200, message: 'Datos actualizados con exito' };
   }
 
   async agregateStock(agregateStock: AgregarStockDto) {
@@ -155,7 +208,8 @@ export class ElementosService {
 
     await this.elementoRepository.save(elemento);
 
-    // await this.notificacionesService.notificarStockBajo(elemento); // Needs update to support Elemento
+    // Verificar notificaciones de stock bajo
+    await this.notificacionesService.notificarStockBajo(elemento);
 
     return { message: 'Stock actualizado correctamente' };
   }
@@ -247,6 +301,7 @@ export class ElementosService {
     idInventario: number,
     filtros?: {
       nombre?: string;
+      codigoBarras?: string;
       categoria?: number;
       caracteristica?: number;
     },
@@ -261,7 +316,16 @@ export class ElementosService {
       .leftJoinAndSelect('elemento.fkInventario', 'inventario')
       .where('inventario.idInventario = :idInventario', { idInventario });
 
-    if (filtros?.nombre) {
+    // Si se proporciona codigoBarras, buscar por nombre parcial O codigo exacto
+    if (filtros?.codigoBarras) {
+      // Buscar parcial por nombre o por código de barras (no requiere el código completo)
+      query.andWhere(
+        '(elemento.nombre ILIKE :term OR elemento.codigoBarras ILIKE :term)',
+        {
+          term: `%${filtros.codigoBarras}%`,
+        },
+      );
+    } else if (filtros?.nombre) {
       query.andWhere('elemento.nombre ILIKE :nombre', {
         nombre: `%${filtros.nombre}%`,
       });
@@ -279,7 +343,14 @@ export class ElementosService {
       });
     }
 
-    return query.getMany();
+    const elementos = await query.getMany();
+    console.log('Elementos consultados:', elementos.map(e => ({
+      id: e.idElemento,
+      nombre: e.nombre,
+      codigoBarras: e.codigoBarras,
+      stock: e.stock
+    })));
+    return elementos;
   }
 
   async venderElemento(idElemento: number, cantidad: number) {
@@ -304,6 +375,9 @@ export class ElementosService {
 
     elemento.stock -= cantidad;
     await this.elementoRepository.save(elemento);
+
+    // Verificar notificaciones de stock bajo
+    await this.notificacionesService.notificarStockBajo(elemento);
 
     return {
       message: 'Venta realizada exitosamente',

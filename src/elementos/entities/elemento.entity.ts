@@ -32,6 +32,9 @@ export class Elementos {
   })
   descripcion: string | null;
 
+  @Column('character varying', { name: 'codigo_barras', nullable: true, unique: true, length: 100 })
+  codigoBarras: string | null;
+
   @Column('boolean', { name: 'estado', nullable: true })
   estado: boolean | null;
 

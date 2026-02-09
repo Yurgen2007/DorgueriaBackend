@@ -78,17 +78,30 @@ export class NotificacionesController {
 
   @Get('verificar-inventario/:idUsuario')
   async verificarInventario(@Param('idUsuario') id: number) {
+    console.log('Recibida peticion para verificar inventario del usuario:', id);
+    
     const usuario = await this.usuarioRepository.findOne({
       where: { idUsuario: id },
       relations: ['fkRol'],
     });
 
     if (!usuario) {
+      console.log('Usuario no encontrado:', id);
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    await this.notificacionesService.verificarInventariosYNotificar();
+    console.log('Usuario encontrado:', usuario.nombre, '- Rol:', usuario.fkRol?.nombre);
 
-    return { mensaje: 'Revisión de inventarios ejecutada' };
+    // Verificar que sea Administrador (case insensitive)
+    if (usuario.fkRol?.nombre?.toLowerCase() !== 'administrador') {
+      console.log('Usuario no es Administrador, solo Administradores pueden verificar inventario');
+      return { mensaje: 'Solo los administradores pueden verificar inventarios' };
+    }
+
+    console.log('Iniciando verificacion de inventarios...');
+    await this.notificacionesService.verificarInventariosYNotificar();
+    console.log('Verificacion completada');
+
+    return { mensaje: 'Revision de inventarios ejecutada' };
   }
 }
