@@ -56,14 +56,14 @@ export class SeedsService {
       {
         idModulo: 1,
         nombre: 'Admin',
-        href: ' ',
+        href: null,
         icono: 'UserIcon',
         estado: true,
       },
       {
         idModulo: 2,
         nombre: 'Bodega',
-        href: ' ',
+        href: null,
         icono: 'ArchiveBoxIcon',
         estado: true,
       },
@@ -224,130 +224,114 @@ export class SeedsService {
       { idRolPermiso: 68, estado: true, fkPermiso: { idPermiso: 68 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 69, estado: true, fkPermiso: { idPermiso: 69 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 70, estado: true, fkPermiso: { idPermiso: 70 }, fkRol: { idRol: 1 } },
-      { idRolPermiso: 71, estado: true, fkPermiso: { idPermiso: 71 }, fkRol: { idRol: 1 } },
-      { idRolPermiso: 72, estado: true, fkPermiso: { idPermiso: 72 }, fkRol: { idRol: 1 } },
-      { idRolPermiso: 73, estado: true, fkPermiso: { idPermiso: 73 }, fkRol: { idRol: 1 } },
-      { idRolPermiso: 74, estado: true, fkPermiso: { idPermiso: 74 }, fkRol: { idRol: 1 } },
     ];
 
+    // PRIMERO: Eliminar TODOS los registros de las tablas dependientes (en orden correcto)
+    // 1. Eliminar todos los rol_permiso
+    console.log('Eliminando rol_permiso...');
+    await this.rolPermisoRepository.query(`DELETE FROM rol_permiso`);
+
+    // 2. Eliminar todos los permisos
+    console.log('Eliminando permisos...');
+    await this.permisosRepository.query(`DELETE FROM permisos`);
+
+    // 3. Eliminar todos los usuarios
+    console.log('Eliminando usuarios...');
+    await this.usuariosRepository.query(`DELETE FROM usuarios`);
+
+    // 4. Eliminar todas las rutas
+    console.log('Eliminando rutas...');
+    await this.rutasRepository.query(`DELETE FROM rutas`);
+
+    // 5. Eliminar todos los módulos
+    console.log('Eliminando módulos...');
+    await this.modulosRepository.query(`DELETE FROM modulos`);
+
+    // 6. Eliminar todos los roles
+    console.log('Eliminando roles...');
+    await this.rolesRepository.query(`DELETE FROM roles`);
+
+    // SEGUNDO: Insertar en el orden correcto
+    // 1. Insertar roles
+    console.log('Insertando roles...');
     for (const role of roles) {
-      const exists = await this.rolesRepository.findOneBy({
-        idRol: role.idRol,
-      });
-      if (!exists)
-        await this.rolesRepository.query(
-          `INSERT INTO roles(id_rol, nombre, estado) VALUES ($1,$2,$3)`,
-          [role.idRol, role.nombre, role.estado],
-        );
-
-      await this.usuariosRepository.query(
-        `SELECT setval(pg_get_serial_sequence('roles', 'id_rol'), (SELECT MAX(id_rol) FROM roles))`,
+      await this.rolesRepository.query(
+        `INSERT INTO roles(id_rol, nombre, estado) VALUES ($1,$2,$3)`,
+        [role.idRol, role.nombre, role.estado],
       );
     }
 
+    // 2. Insertar módulos
+    console.log('Insertando módulos...');
     for (const module of modules) {
-      const exists = await this.modulosRepository.findOneBy({
-        idModulo: module.idModulo,
-      });
-      if (!exists)
-        await this.modulosRepository.query(
-          `INSERT INTO modulos(id_modulo, nombre, href, icono, estado) VALUES ($1,$2,$3,$4,$5)`,
-          [
-            module.idModulo,
-            module.nombre,
-            module.href,
-            module.icono,
-            module.estado,
-          ],
-        );
-
-      await this.usuariosRepository.query(
-        `SELECT setval(pg_get_serial_sequence('modulos', 'id_modulo'), (SELECT MAX(id_modulo) FROM modulos))`,
+      await this.modulosRepository.query(
+        `INSERT INTO modulos(id_modulo, nombre, href, icono, estado) VALUES ($1,$2,$3,$4,$5)`,
+        [
+          module.idModulo,
+          module.nombre,
+          module.href,
+          module.icono,
+          module.estado,
+        ],
       );
     }
 
+    // 3. Insertar usuarios
+    console.log('Insertando usuarios...');
     for (const user of users) {
-      const exists = await this.usuariosRepository.findOneBy({
-        idUsuario: user.idUsuario,
-      });
-
-      if (!exists) {
-        const saltOrRounds = 10;
-        const hashedPassword = await bcrypt.hash(user.password, saltOrRounds);
-        await this.usuariosRepository.query(
-          `INSERT INTO usuarios(id_usuario, documento, nombre, apellido, estado, password, fk_rol) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-          [
-            user.idUsuario,
-            user.documento,
-            user.nombre,
-            user.apellido,
-            user.estado,
-            hashedPassword,
-            user.fkRol.idRol,
-          ],
-        );
-
-        await this.usuariosRepository.query(
-          `SELECT setval(pg_get_serial_sequence('usuarios', 'id_usuario'), (SELECT MAX(id_usuario) FROM usuarios))`,
-        );
-      }
+      const saltOrRounds = 10;
+      const hashedPassword = await bcrypt.hash(user.password, saltOrRounds);
+      await this.usuariosRepository.query(
+        `INSERT INTO usuarios(id_usuario, documento, nombre, apellido, estado, password, fk_rol) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          user.idUsuario,
+          user.documento,
+          user.nombre,
+          user.apellido,
+          user.estado,
+          hashedPassword,
+          user.fkRol.idRol,
+        ],
+      );
     }
 
+    // 4. Insertar rutas
+    console.log('Insertando rutas...');
     for (const ruta of rutas) {
-      const exists = await this.rutasRepository.findOneBy({
-        idRuta: ruta.idRuta,
-      });
-      if (!exists)
-        await this.rutasRepository.query(
-          `INSERT INTO rutas(id_ruta, nombre, href, fk_modulo, icono, listed, estado) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-          [
-            ruta.idRuta,
-            ruta.nombre,
-            ruta.href,
-            ruta.fkModulo.idModulo,
-            ruta.icono,
-            ruta.listed,
-            ruta.estado,
-          ],
-        );
-
-      await this.usuariosRepository.query(
-        `SELECT setval(pg_get_serial_sequence('rutas', 'id_ruta'), (SELECT MAX(id_ruta) FROM rutas))`,
+      await this.rutasRepository.query(
+        `INSERT INTO rutas(id_ruta, nombre, href, fk_modulo, icono, listed, estado) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          ruta.idRuta,
+          ruta.nombre,
+          ruta.href,
+          ruta.fkModulo.idModulo,
+          ruta.icono,
+          ruta.listed,
+          ruta.estado,
+        ],
       );
     }
 
+    // 5. Insertar permisos
+    console.log('Insertando permisos...');
     for (const permiso of permisos) {
-      const exists = await this.permisosRepository.findOneBy({
-        idPermiso: permiso.idPermiso,
-      });
-      if (!exists)
-        await this.permisosRepository.query(
-          `INSERT INTO permisos(id_permiso, permiso, fk_ruta) VALUES ($1,$2,$3)`,
-          [permiso.idPermiso, permiso.permiso, permiso.fkRuta.idRuta],
-        );
-
-      await this.usuariosRepository.query(
-        `SELECT setval(pg_get_serial_sequence('permisos', 'id_permiso'), (SELECT MAX(id_permiso) FROM permisos))`,
+      await this.permisosRepository.query(
+        `INSERT INTO permisos(id_permiso, permiso, fk_ruta) VALUES ($1,$2,$3)`,
+        [permiso.idPermiso, permiso.permiso, permiso.fkRuta.idRuta],
       );
     }
 
+    // 6. Insertar rol_permiso
+    console.log('Insertando rol_permiso...');
     for (const rolPermiso of rol_permiso) {
-      const exists = await this.rolPermisoRepository.findOneBy({
-        idRolPermiso: rolPermiso.idRolPermiso,
-      });
-      if (!exists)
-        await this.rolPermisoRepository.query(
-          `INSERT INTO rol_permiso(id_rol_permiso, estado, fk_permiso, fk_rol) VALUES ($1,$2,$3,$4)`,
-          [
-            rolPermiso.idRolPermiso,
-            rolPermiso.estado,
-            rolPermiso.fkPermiso.idPermiso,
-            rolPermiso.fkRol.idRol,
-          ],
-        );
-
-      await this.usuariosRepository.query(
-        `SELECT setval(pg_get_serial_sequence('rol_permiso', 'id_rol_permiso'), (SELECT MAX(id_rol_permiso) FROM rol_permiso))`,
+      await this.rolPermisoRepository.query(
+        `INSERT INTO rol_permiso(id_rol_permiso, estado, fk_permiso, fk_rol) VALUES ($1,$2,$3,$4)`,
+        [
+          rolPermiso.idRolPermiso,
+          rolPermiso.estado,
+          rolPermiso.fkPermiso.idPermiso,
+          rolPermiso.fkRol.idRol,
+        ],
       );
     }
 
