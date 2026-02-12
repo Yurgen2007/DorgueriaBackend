@@ -1,15 +1,19 @@
-    FROM node:22.9.0-alpine3.19
+FROM node:22.9.0-alpine3.19
 
-    WORKDIR /app/
+WORKDIR /app
 
-    COPY package*.json .
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
 
-    RUN npm install
+# Copy source code
+COPY . .
 
-    COPY . .
+# Build the application
+RUN npm run build
 
-    EXPOSE 3000
+# Expose port
+EXPOSE 3000
 
-    RUN npm run build
-
-    CMD ["sh", "-c", "npm run migration:run && npx nestjs-command seed:database && npm run start:prod"]
+# Run migrations and seed, then start production
+CMD ["sh", "-c", "npm run migration:run && npx ts-node src/cli.ts seed:database && npm run start:prod"]

@@ -4,15 +4,22 @@ export class UpdateSitiosWithEstantePasillo1756340000000 implements MigrationInt
     name = 'UpdateSitiosWithEstantePasillo1756340000000'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Agregar campos a la tabla sitios
-        await queryRunner.query(`ALTER TABLE sitios ADD COLUMN IF NOT EXISTS estante VARCHAR(20)`);
-        await queryRunner.query(`ALTER TABLE sitios ADD COLUMN IF NOT EXISTS pasillo VARCHAR(20)`);
-        await queryRunner.query(`ALTER TABLE sitios ADD COLUMN IF NOT EXISTS nivel VARCHAR(20)`);
+        // Check if table exists before altering
+        const sitiosExists = await queryRunner.query(`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sitios')`);
         
-        // Actualizar elementos para incluir campos perecedero, noPerecedero, fechaVencimiento si no existen
-        await queryRunner.query(`ALTER TABLE elementos ADD COLUMN IF NOT EXISTS perecedero BOOLEAN DEFAULT false`);
-        await queryRunner.query(`ALTER TABLE elementos ADD COLUMN IF NOT EXISTS no_perecedero BOOLEAN DEFAULT false`);
-        await queryRunner.query(`ALTER TABLE elementos ADD COLUMN IF NOT EXISTS fecha_vencimiento DATE`);
+        if (sitiosExists[0]?.exists) {
+            await queryRunner.query(`ALTER TABLE sitios ADD COLUMN IF NOT EXISTS estante VARCHAR(20)`);
+            await queryRunner.query(`ALTER TABLE sitios ADD COLUMN IF NOT EXISTS pasillo VARCHAR(20)`);
+            await queryRunner.query(`ALTER TABLE sitios ADD COLUMN IF NOT EXISTS nivel VARCHAR(20)`);
+        }
+        
+        const elementosExists = await queryRunner.query(`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'elementos')`);
+        
+        if (elementosExists[0]?.exists) {
+            await queryRunner.query(`ALTER TABLE elementos ADD COLUMN IF NOT EXISTS perecedero BOOLEAN DEFAULT false`);
+            await queryRunner.query(`ALTER TABLE elementos ADD COLUMN IF NOT EXISTS no_perecedero BOOLEAN DEFAULT false`);
+            await queryRunner.query(`ALTER TABLE elementos ADD COLUMN IF NOT EXISTS fecha_vencimiento DATE`);
+        }
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

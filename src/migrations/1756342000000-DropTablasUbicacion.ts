@@ -4,10 +4,21 @@ export class DropTablasUbicacion1756342000000 implements MigrationInterface {
     name = 'DropTablasUbicacion1756342000000'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Eliminar tablas en orden inverso (por las FK)
-        await queryRunner.dropTable('sedes');
-        await queryRunner.dropTable('centros');
-        await queryRunner.dropTable('municipios');
+        // Eliminar tablas solo si existen (en orden inverso por las FK)
+        const sedesExists = await queryRunner.query(`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sedes')`);
+        if (sedesExists[0]?.exists) {
+            await queryRunner.dropTable('sedes');
+        }
+        
+        const centrosExists = await queryRunner.query(`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'centros')`);
+        if (centrosExists[0]?.exists) {
+            await queryRunner.dropTable('centros');
+        }
+        
+        const municipiosExists = await queryRunner.query(`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'municipios')`);
+        if (municipiosExists[0]?.exists) {
+            await queryRunner.dropTable('municipios');
+        }
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
