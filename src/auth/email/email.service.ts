@@ -7,6 +7,11 @@ import { Repository } from "typeorm";
 import { createTransport, Transporter, SendMailOptions } from 'nodemailer';
 import { mailBody } from "./mail.body";
 
+interface MailCredentials {
+    serviceMail: string;
+    mailUser: string;
+    mailPassword: string;
+}
 
 @Injectable()
 
@@ -22,22 +27,32 @@ export class EmailService {
         private usuarioRepository: Repository<Usuarios>
     ) {
         this.nodemailerTransport = createTransport({
-            service: this.configService.get<string>('SERVICE_MAIL'), //gmail, hotmail y asi
+            service: this.configService.get<string>('SERVICE_MAIL'),
             auth: {
-                user: configService.get('MAIL_USER'),//quien envia
-                pass: configService.get('MAIL_PASSWORD')
+                user: this.configService.get('MAIL_USER'),
+                pass: this.configService.get('MAIL_PASSWORD')
             }
         })
     }
 
+    private createTransporter(credentials: MailCredentials): Transporter {
+        return createTransport({
+            service: credentials.serviceMail,
+            auth: {
+                user: credentials.mailUser,
+                pass: credentials.mailPassword
+            }
+        });
+    }
 
-    public async sendMail(options: SendMailOptions) {
+    public async sendMail(options: SendMailOptions, credentials: MailCredentials) {
+        const transporter = this.createTransporter(credentials);
         this.logger.log('Email sent out to', options.to);
-        return this.nodemailerTransport.sendMail(options);
+        return transporter.sendMail(options);
     }
 
 
-    async sendResetPasswordLink(correo: string): Promise<void> {
+    async sendResetPasswordLink(correo: string, credentials: MailCredentials): Promise<void> {
 
         const user = this.usuarioRepository.findOne({
             where: { correo }
@@ -64,7 +79,7 @@ export class EmailService {
             subject: 'Reset password',
             html,
 
-        });
+        }, credentials);
 
     }
 

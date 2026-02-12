@@ -98,7 +98,11 @@ export class UsuariosService {
       }
     });
     const mappedUsers = rawUsers.map(user => {
-      return { ...user, fkRol: user.fkRol.idRol };
+      return { 
+        ...user, 
+        fkRol: user.fkRol.idRol,
+        mailPassword: user.mailPassword || ""
+      };
     })
     return mappedUsers
   }

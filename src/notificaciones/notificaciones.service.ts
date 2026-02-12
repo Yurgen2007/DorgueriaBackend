@@ -9,6 +9,13 @@ import { Elementos } from 'src/elementos/entities/elemento.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { EmailService } from 'src/auth/email/email.service';
 import { stockBajoEmail, caducidadEmail } from 'src/auth/email/mail.body';
+import { ConfigService } from '@nestjs/config';
+
+interface MailCredentials {
+  serviceMail: string;
+  mailUser: string;
+  mailPassword: string;
+}
 
 @Injectable()
 export class NotificacionesService {
@@ -21,6 +28,7 @@ export class NotificacionesService {
     private readonly elementoRepository: Repository<Elementos>,
     private readonly websocketGateway: WebsocketGateway,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) { }
 
   async create(dto: CreateNotificacioneDto) {
@@ -312,6 +320,33 @@ export class NotificacionesService {
       .getMany();
   }
 
+  private async getMailCredentials(): Promise<MailCredentials> {
+    // Buscar un administrador con credenciales configuradas
+    const admin = await this.usuarioRepository
+      .createQueryBuilder('usuario')
+      .innerJoin('usuario.fkRol', 'rol')
+      .where('LOWER(rol.nombre) = :nombre', { nombre: 'administrador' })
+      .andWhere('usuario.serviceMail IS NOT NULL')
+      .andWhere('usuario.mailUser IS NOT NULL')
+      .andWhere('usuario.mailPassword IS NOT NULL')
+      .getOne();
+
+    if (admin && admin.serviceMail && admin.mailUser && admin.mailPassword) {
+      return {
+        serviceMail: admin.serviceMail,
+        mailUser: admin.mailUser,
+        mailPassword: admin.mailPassword,
+      };
+    }
+
+    // Fallback a variables de entorno
+    return {
+      serviceMail: this.configService.get('SERVICE_MAIL') || 'gmail',
+      mailUser: this.configService.get('MAIL_USER') || '',
+      mailPassword: this.configService.get('MAIL_PASSWORD') || '',
+    };
+  }
+
   async notificarStockBajo(elemento: any) {
     // Verificar si el elemento esta activo (estado true o null)
     if (elemento.estado === false) {
@@ -344,15 +379,17 @@ export class NotificacionesService {
             idElemento: elemento.idElemento,
             stock: elemento.stock,
             nombreElemento: elemento.nombre,
+            codigoBarras: elemento.codigoBarras,
           },
         );
         // Enviar correo
         try {
+          const credentials = await this.getMailCredentials();
           await this.emailService.sendMail({
             to: admin.correo,
             subject: '⚠️ Alerta de Stock Bajo - FarmaMedica',
-            html: stockBajoEmail(elemento.nombre, elemento.stock),
-          });
+            html: stockBajoEmail(elemento.nombre, elemento.stock, elemento.codigoBarras),
+          }, credentials);
           console.log(`Correo de stock bajo enviado a ${admin.correo}`);
         } catch (error) {
           console.error('Error enviando correo de stock bajo:', error);
@@ -406,15 +443,17 @@ export class NotificacionesService {
             fechaCaducidad: elemento.fechaVencimiento,
             diasRestantes,
             nombreElemento: elemento.nombre,
+            codigoBarras: elemento.codigoBarras,
           },
         );
         // Enviar correo
         try {
+          const credentials = await this.getMailCredentials();
           await this.emailService.sendMail({
             to: admin.correo,
             subject: '🗓️ Alerta de Caducidad Proxima - FarmaMedica',
             html: caducidadEmail(elemento.nombre, diasRestantes, elemento.fechaVencimiento),
-          });
+          }, credentials);
           console.log(`Correo de caducidad enviado a ${admin.correo}`);
         } catch (error) {
           console.error('Error enviando correo de caducidad:', error);

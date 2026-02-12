@@ -183,7 +183,16 @@ export class AuthService {
             throw new HttpException(`No se encontro ningun usuario con el correo ${correo}`, HttpStatus.NOT_FOUND)
         }
 
-        this.emailService.sendResetPasswordLink(correo);
+        // Usar las credenciales del usuario o las del .env como fallback
+        const serviceMail = user.serviceMail || this.configService.get("SERVICE_MAIL");
+        const mailUser = user.mailUser || this.configService.get("MAIL_USER");
+        const mailPassword = user.mailPassword || this.configService.get("MAIL_PASSWORD");
+
+        if (!serviceMail || !mailUser || !mailPassword) {
+            throw new HttpException(`Faltan credenciales de correo. Por favor configure las credenciales en la sección de configuración de correo.`, HttpStatus.BAD_REQUEST)
+        }
+
+        this.emailService.sendResetPasswordLink(correo, { serviceMail, mailUser, mailPassword });
 
         return { status: 200, message: "Revisa tu correo" }
     }
