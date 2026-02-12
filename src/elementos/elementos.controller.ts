@@ -160,7 +160,7 @@ export class ElementosController {
 
   // Endpoint para vender (descontar stock)
   @Post(':idElemento/vender')
-  @Permiso(20)
+  @Permiso(72)
   vender(
     @Param('idElemento', ParseIntPipe) idElemento: number,
     @Body('cantidad', ParseIntPipe) cantidad: number = 1,

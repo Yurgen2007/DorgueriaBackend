@@ -1,58 +1,42 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Modulos } from 'src/modulos/entities/modulo.entity';
-import { Roles } from 'src/roles/entities/role.entity';
-import { Usuarios } from 'src/usuarios/entities/usuario.entity';
-import { Rutas } from 'src/rutas/entities/ruta.entity';
-import { Permisos } from 'src/permisos/entities/permiso.entity';
-import { RolPermiso } from 'src/rol-permiso/entities/rol-permiso.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Roles } from '../../roles/entities/role.entity';
+import { Modulos } from '../../modulos/entities/modulo.entity';
+import { Rutas } from '../../rutas/entities/ruta.entity';
+import { Permisos } from '../../permisos/entities/permiso.entity';
+import { RolPermiso } from '../../rol-permiso/entities/rol-permiso.entity';
+import { Usuarios } from '../../usuarios/entities/usuario.entity';
 
 @Injectable()
 export class SeedsService {
   constructor(
-    @InjectRepository(Modulos)
-    private readonly modulosRepository: Repository<Modulos>,
     @InjectRepository(Roles)
-    private readonly rolesRepository: Repository<Roles>,
-    @InjectRepository(Usuarios)
-    private readonly usuariosRepository: Repository<Usuarios>,
+    private rolesRepository: Repository<Roles>,
+    @InjectRepository(Modulos)
+    private modulosRepository: Repository<Modulos>,
     @InjectRepository(Rutas)
-    private readonly rutasRepository: Repository<Rutas>,
+    private rutasRepository: Repository<Rutas>,
     @InjectRepository(Permisos)
-    private readonly permisosRepository: Repository<Permisos>,
+    private permisosRepository: Repository<Permisos>,
     @InjectRepository(RolPermiso)
-    private readonly rolPermisoRepository: Repository<RolPermiso>,
-  ) { }
+    private rolPermisoRepository: Repository<RolPermiso>,
+    @InjectRepository(Usuarios)
+    private usuariosRepository: Repository<Usuarios>,
+  ) {}
 
   async seed() {
+    console.log('cli seed:database');
+
+    console.log('Poblar la base de datos con datos defecto');
+
     const roles = [
-      {
-        idRol: 1,
-        nombre: 'Administrador',
-        estado: true,
-      },
-      {
-        idRol: 2,
-        nombre: 'Aprendiz',
-        estado: true,
-      },
+      { idRol: 1, nombre: 'Administrador', estado: true },
+      { idRol: 2, nombre: 'Vendedor', estado: true },
     ];
 
-    const users = [
-      {
-        idUsuario: 1,
-        documento: 123456,
-        nombre: 'Admin',
-        apellido: 'Account',
-        estado: true,
-        password: 'Admin123456',
-        fkRol: { idRol: 1 },
-      },
-    ];
-
-    const modules = [
+    const modulos = [
       {
         idModulo: 1,
         nombre: 'Admin',
@@ -138,14 +122,6 @@ export class SeedsService {
         estado: true,
         fkModulo: { idModulo: 2 },
       },
-      {
-        idRuta: 19,
-        nombre: 'Tipos movimientos',
-        href: 'bodega/tipos',
-        listed: false,
-        estado: true,
-        fkModulo: { idModulo: 2 },
-      },
     ];
 
     const permisos = [
@@ -163,10 +139,9 @@ export class SeedsService {
       { idPermiso: 20, permiso: 'Actualizar Elemento', fkRuta: { idRuta: 6 } },
       { idPermiso: 21, permiso: 'Eliminar Elemento', fkRuta: { idRuta: 6 } },
       { idPermiso: 27, permiso: 'Crear Inventario', fkRuta: { idRuta: 8 } },
-      { idPermiso: 28, permiso: 'Agregar Stock Inventario', fkRuta: { idRuta: 8 } },
+      { idPermiso: 28, permiso: 'Limitar Inventario', fkRuta: { idRuta: 8 } },
       { idPermiso: 29, permiso: 'Listar Inventario', fkRuta: { idRuta: 8 } },
-      { idPermiso: 30, permiso: 'Actualizar Inventario', fkRuta: { idRuta: 8 } },
-      { idPermiso: 31, permiso: 'Eliminar Inventario', fkRuta: { idRuta: 8 } },
+      { idPermiso: 30, permiso: 'Desactivar Inventario', fkRuta: { idRuta: 8 } },
       { idPermiso: 33, permiso: 'Crear Rol', fkRuta: { idRuta: 10 } },
       { idPermiso: 34, permiso: 'Listar Roles', fkRuta: { idRuta: 10 } },
       { idPermiso: 35, permiso: 'Actualizar Rol', fkRuta: { idRuta: 10 } },
@@ -185,9 +160,12 @@ export class SeedsService {
       { idPermiso: 68, permiso: 'Listar caracteristicas', fkRuta: { idRuta: 18 } },
       { idPermiso: 69, permiso: 'Actualizar caracteristica', fkRuta: { idRuta: 18 } },
       { idPermiso: 70, permiso: 'Eliminar caracteristica', fkRuta: { idRuta: 18 } },
+      { idPermiso: 71, permiso: 'Exportar PDF', fkRuta: { idRuta: 6 } },
+      { idPermiso: 72, permiso: 'Vender', fkRuta: { idRuta: 6 } },
     ];
 
     const rol_permiso = [
+      // Administrador tiene TODOS los permisos
       { idRolPermiso: 1, estado: true, fkPermiso: { idPermiso: 1 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 2, estado: true, fkPermiso: { idPermiso: 2 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 3, estado: true, fkPermiso: { idPermiso: 3 }, fkRol: { idRol: 1 } },
@@ -205,25 +183,68 @@ export class SeedsService {
       { idRolPermiso: 28, estado: true, fkPermiso: { idPermiso: 28 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 29, estado: true, fkPermiso: { idPermiso: 29 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 30, estado: true, fkPermiso: { idPermiso: 30 }, fkRol: { idRol: 1 } },
-      { idRolPermiso: 31, estado: true, fkPermiso: { idPermiso: 31 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 33, estado: true, fkPermiso: { idPermiso: 33 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 34, estado: true, fkPermiso: { idPermiso: 34 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 35, estado: true, fkPermiso: { idPermiso: 35 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 36, estado: true, fkPermiso: { idPermiso: 36 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 37, estado: true, fkPermiso: { idPermiso: 37 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 38, estado: true, fkPermiso: { idPermiso: 38 }, fkRol: { idRol: 1 } },
+      // Permisos de unidades medida
       { idRolPermiso: 59, estado: true, fkPermiso: { idPermiso: 59 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 60, estado: true, fkPermiso: { idPermiso: 60 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 61, estado: true, fkPermiso: { idPermiso: 61 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 62, estado: true, fkPermiso: { idPermiso: 62 }, fkRol: { idRol: 1 } },
+      // Permisos de categorias
       { idRolPermiso: 63, estado: true, fkPermiso: { idPermiso: 63 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 64, estado: true, fkPermiso: { idPermiso: 64 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 65, estado: true, fkPermiso: { idPermiso: 65 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 66, estado: true, fkPermiso: { idPermiso: 66 }, fkRol: { idRol: 1 } },
+      // Permisos de caracteristicas
       { idRolPermiso: 67, estado: true, fkPermiso: { idPermiso: 67 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 68, estado: true, fkPermiso: { idPermiso: 68 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 69, estado: true, fkPermiso: { idPermiso: 69 }, fkRol: { idRol: 1 } },
       { idRolPermiso: 70, estado: true, fkPermiso: { idPermiso: 70 }, fkRol: { idRol: 1 } },
+      // Exportar PDF solo para Administrador
+      { idRolPermiso: 71, estado: true, fkPermiso: { idPermiso: 71 }, fkRol: { idRol: 1 } },
+      // Vender solo para Administrador
+      { idRolPermiso: 72, estado: true, fkPermiso: { idPermiso: 72 }, fkRol: { idRol: 1 } },
+      // Vendedor puede: listar elementos, listar inventarios, vender
+      { idRolPermiso: 73, estado: true, fkPermiso: { idPermiso: 19 }, fkRol: { idRol: 2 } },
+      { idRolPermiso: 74, estado: true, fkPermiso: { idPermiso: 29 }, fkRol: { idRol: 2 } },
+      { idRolPermiso: 75, estado: true, fkPermiso: { idPermiso: 72 }, fkRol: { idRol: 2 } },
+    ];
+
+    const users = [
+      {
+        idUsuario: 1,
+        documento: 123456789,
+        nombre: 'Admin',
+        apellido: 'System',
+        edad: 30,
+        telefono: '3001234567',
+        correo: 'farmamedicadrogueria48@gmail.com',
+        estado: true,
+        cargo: 'Administrador',
+        password: 'Admin123',
+        perfil: 'defaultPerfil.png',
+        serviceMail: 'gmail',
+        mailUser: 'farmamedicadrogueria48@gmail.com',
+        mailPassword: 'wdis nwbw lgkg rivo',
+        fkRol: { idRol: 1 },
+      },
+      {
+        idUsuario: 2,
+        documento: 111222,
+        nombre: 'Vendedor',
+        apellido: 'Default',
+        edad: 25,
+        telefono: '3000000000',
+        correo: 'vendedor@farmamedica.com',
+        estado: true,
+        cargo: 'vendedor',
+        password: 'Vendedor123',
+        fkRol: { idRol: 2 },
+      },
     ];
 
     // PRIMERO: Eliminar TODOS los registros de las tablas dependientes (en orden correcto)
@@ -235,11 +256,15 @@ export class SeedsService {
     console.log('Eliminando permisos...');
     await this.permisosRepository.query(`DELETE FROM permisos`);
 
-    // 3. Eliminar todos los usuarios
+    // 3. Eliminar todas las notificaciones
+    console.log('Eliminando notificaciones...');
+    await this.permisosRepository.query(`DELETE FROM notificaciones`);
+
+    // 4. Eliminar todos los usuarios
     console.log('Eliminando usuarios...');
     await this.usuariosRepository.query(`DELETE FROM usuarios`);
 
-    // 4. Eliminar todas las rutas
+    // 5. Eliminar todas las rutas
     console.log('Eliminando rutas...');
     await this.rutasRepository.query(`DELETE FROM rutas`);
 
@@ -263,16 +288,10 @@ export class SeedsService {
 
     // 2. Insertar módulos
     console.log('Insertando módulos...');
-    for (const module of modules) {
+    for (const modulo of modulos) {
       await this.modulosRepository.query(
         `INSERT INTO modulos(id_modulo, nombre, href, icono, estado) VALUES ($1,$2,$3,$4,$5)`,
-        [
-          module.idModulo,
-          module.nombre,
-          module.href,
-          module.icono,
-          module.estado,
-        ],
+        [modulo.idModulo, modulo.nombre, modulo.href, modulo.icono, modulo.estado],
       );
     }
 
@@ -280,16 +299,29 @@ export class SeedsService {
     console.log('Insertando usuarios...');
     for (const user of users) {
       const saltOrRounds = 10;
-      const hashedPassword = await bcrypt.hash(user.password, saltOrRounds);
+      // Si la contraseña ya es un hash de bcrypt (comienza con $2b$10$), usarla directamente
+      const isHashedPassword = user.password.startsWith('$2b$10$');
+      const hashedPassword = isHashedPassword
+        ? user.password
+        : await bcrypt.hash(user.password, saltOrRounds);
       await this.usuariosRepository.query(
-        `INSERT INTO usuarios(id_usuario, documento, nombre, apellido, estado, password, fk_rol) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        `INSERT INTO usuarios(id_usuario, documento, nombre, apellido, edad, telefono, correo, estado, password, cargo, perfil, service_mail, mail_user, mail_password, fk_rol) 
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
         [
           user.idUsuario,
           user.documento,
           user.nombre,
           user.apellido,
+          user.edad,
+          user.telefono,
+          user.correo,
           user.estado,
           hashedPassword,
+          user.cargo,
+          user.perfil || 'defaultPerfil.png',
+          user.serviceMail || null,
+          user.mailUser || null,
+          user.mailPassword || null,
           user.fkRol.idRol,
         ],
       );

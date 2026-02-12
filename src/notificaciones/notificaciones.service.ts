@@ -230,7 +230,7 @@ export class NotificacionesService {
     const receptores = await this.usuarioRepository.find({
       where: [
         { fkRol: { nombre: 'Administrador' } },
-        { fkRol: { nombre: 'Lider' } },
+        { fkRol: { nombre: 'Vendedor' } },
       ],
       relations: ['fkRol'],
     });
@@ -271,15 +271,13 @@ export class NotificacionesService {
     if (movimiento.tipo.nombre.toLowerCase() === 'ingreso') {
       const admins = await this.usuarioRepository.find({
         where: {
-          fkRol: {
-            nombre: 'Administrador',
-          },
+          fkRol: { nombre: 'Administrador' },
         },
         relations: ['fkRol'],
       });
-      const lider = await this.usuarioRepository.findOne({
+      const vendedores = await this.usuarioRepository.find({
         where: {
-          fkRol: { nombre: 'Lider' },
+          fkRol: { nombre: 'Vendedor' },
         },
       });
 
@@ -297,12 +295,12 @@ export class NotificacionesService {
         );
       }
 
-      if (lider) {
+      for (const vendedor of vendedores) {
         await this.enviarYGuardarNotificacion(
           'Ingreso registrado',
           mensaje,
           false,
-          lider,
+          vendedor,
           {
             idMovimiento: movimiento.id,
           },
@@ -311,31 +309,31 @@ export class NotificacionesService {
     }
   }
 
-  // Metodo para buscar administradores de forma case-insensitive
+  // Metodo para buscar administradores y vendedores de forma case-insensitive
   private async buscarAdministradores(): Promise<Usuarios[]> {
     return this.usuarioRepository
       .createQueryBuilder('usuario')
       .innerJoin('usuario.fkRol', 'rol')
-      .where('LOWER(rol.nombre) = :nombre', { nombre: 'administrador' })
+      .where('LOWER(rol.nombre) IN (:...nombres)', { nombres: ['administrador', 'vendedor'] })
       .getMany();
   }
 
   private async getMailCredentials(): Promise<MailCredentials> {
-    // Buscar un administrador con credenciales configuradas
-    const admin = await this.usuarioRepository
+    // Buscar un usuario (administrador o vendedor) con credenciales configuradas
+    const usuarioConCredenciales = await this.usuarioRepository
       .createQueryBuilder('usuario')
       .innerJoin('usuario.fkRol', 'rol')
-      .where('LOWER(rol.nombre) = :nombre', { nombre: 'administrador' })
+      .where('LOWER(rol.nombre) IN (:...nombres)', { nombres: ['administrador', 'vendedor'] })
       .andWhere('usuario.serviceMail IS NOT NULL')
       .andWhere('usuario.mailUser IS NOT NULL')
       .andWhere('usuario.mailPassword IS NOT NULL')
       .getOne();
 
-    if (admin && admin.serviceMail && admin.mailUser && admin.mailPassword) {
+    if (usuarioConCredenciales && usuarioConCredenciales.serviceMail && usuarioConCredenciales.mailUser && usuarioConCredenciales.mailPassword) {
       return {
-        serviceMail: admin.serviceMail,
-        mailUser: admin.mailUser,
-        mailPassword: admin.mailPassword,
+        serviceMail: usuarioConCredenciales.serviceMail,
+        mailUser: usuarioConCredenciales.mailUser,
+        mailPassword: usuarioConCredenciales.mailPassword,
       };
     }
 
