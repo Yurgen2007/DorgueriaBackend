@@ -8,6 +8,7 @@ import { Usuarios } from 'src/usuarios/entities/usuario.entity';
 import { Repository } from 'typeorm';
 import { EmailService } from 'src/auth/email/email.service';
 import { groupBy } from "lodash";
+import { MailConfigDto } from './dto/mail-config.dto';
 
 
 
@@ -216,6 +217,37 @@ export class AuthService {
         return { status: 200, message: "Contraseña actualizada correctamente" }
     }
 
+    async updateMailConfig(idUsuario: number, mailConfig: MailConfigDto) {
+        const user = await this.usuarioRepository.findOneBy({ idUsuario });
 
+        if (!user) {
+            throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+        }
+
+        user.serviceMail = mailConfig.serviceMail;
+        user.mailUser = mailConfig.mailUser;
+        user.mailPassword = mailConfig.mailPassword;
+
+        await this.usuarioRepository.save(user);
+
+        return { status: 200, message: "Configuración de correo actualizada correctamente" };
+    }
+
+    async getMailConfig(idUsuario: number) {
+        const user = await this.usuarioRepository.findOneBy({ idUsuario });
+
+        if (!user) {
+            throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+        }
+
+        return {
+            status: 200,
+            data: {
+                serviceMail: user.serviceMail,
+                mailUser: user.mailUser,
+                // No retornamos la contraseña por seguridad
+            }
+        };
+    }
 
 }

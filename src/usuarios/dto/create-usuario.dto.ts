@@ -54,4 +54,17 @@ export class CreateUsuarioDto {
 
   @IsNumber()
   fkRol: number;
+
+  @IsString()
+  @IsOptional()
+  serviceMail: string;
+
+  @IsString()
+  @IsEmail()
+  @IsOptional()
+  mailUser: string;
+
+  @IsString()
+  @IsOptional()
+  mailPassword: string;
 }

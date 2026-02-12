@@ -11,6 +11,7 @@ import {
   UploadedFile,
   Delete,
   ParseIntPipe,
+  Res,
 } from '@nestjs/common';
 import { ElementosService } from './elementos.service';
 import { CreateElementoDto } from './dto/create-elemento.dto';
@@ -21,6 +22,9 @@ import { extname } from 'path';
 import { PermisoGuard } from 'src/auth/guards/permiso.guard';
 import { Permiso } from 'src/auth/decorators/permiso.decorator';
 import { UpdateElementoDto } from './dto/update-elemento.dto';
+import { Response } from 'express';
+import * as XLSX from 'xlsx';
+
 @UseGuards(JwtGuard, PermisoGuard)
 @Controller('elementos')
 export class ElementosController {
@@ -174,5 +178,73 @@ export class ElementosController {
   @Permiso(22)
   remove(@Param('idElemento') idElemento: number) {
     return this.elementosService.remove(+idElemento);
+  }
+
+  // Endpoint para exportar elementos a Excel
+  @Get('export/excel')
+  @Permiso(19)
+  async exportToExcel(@Res() res: Response) {
+    const elementos = await this.elementosService.findAll();
+
+    // Transformar datos para Excel (sin imagen, con todas las caracteristicas)
+    const data = elementos.map(el => ({
+      ID: el.idElemento,
+      Nombre: el.nombre,
+      Descripcion: el.descripcion || '',
+      CodigoBarras: el.codigoBarras || '',
+      Stock: el.stock,
+      Estado: el.estado ? 'Activo' : 'Inactivo',
+      Categoria: el.fkCategoria?.nombre || '',
+      UnidadMedida: el.fkUnidadMedida?.nombre || '',
+      Caracteristica: el.fkCaracteristica?.nombre || '',
+      Sitio: el.fkSitio?.nombre || '',
+      Pasillo: el.fkSitio?.pasillo || '',
+      Estante: el.fkSitio?.estante || '',
+      Inventario: el.fkInventario?.nombre || '',
+      FechaVencimiento: el.fechaVencimiento ? new Date(el.fechaVencimiento).toLocaleDateString('es-ES') : '',
+      FechaCreacion: el.createdAt ? new Date(el.createdAt).toLocaleDateString('es-ES') : '',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Elementos');
+
+    // Aplicar estilo verde a los encabezados
+    const headers = Object.keys(data[0] || {});
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    
+    // Verde para los encabezados (fila 0)
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+      worksheet[cellAddress] = {
+        ...worksheet[cellAddress],
+        s: {
+          fill: { fgColor: { rgb: '4CAF50' } }, // Verde víbido (biché)
+          font: { color: { rgb: 'FFFFFF' }, bold: true, name: 'Arial' },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: {
+            top: { style: 'thin', color: { rgb: '000000' } },
+            bottom: { style: 'thin', color: { rgb: '000000' } },
+            left: { style: 'thin', color: { rgb: '000000' } },
+            right: { style: 'thin', color: { rgb: '000000' } },
+          },
+        },
+      };
+    }
+
+    // Ajustar ancho de columnas
+    const colWidths = headers.map(h => ({ wch: Math.max(h.length, 15) }));
+    worksheet['!cols'] = colWidths;
+
+    // Generar nombre de archivo con fecha
+    const fileName = `elementos_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    // Generar buffer y enviar como respuesta
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+    
+    return res.send(buffer);
   }
 }

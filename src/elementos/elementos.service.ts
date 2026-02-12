@@ -116,6 +116,7 @@ export class ElementosService {
       estado: updateElementoDto.estado,
       codigoBarras: updateElementoDto.codigoBarras || null,
       stock: updateElementoDto.stock ?? elemento.stock,
+      imagen: updateElementoDto.imagen ?? elemento.imagen,
     });
 
     // Actualizar fecha de vencimiento independientemente de si viene vacía o no

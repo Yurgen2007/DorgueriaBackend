@@ -59,6 +59,15 @@ export class Usuarios {
   @Column('character varying', { name: 'perfil', nullable: true, length: 255 })
   perfil: string;
 
+  @Column('character varying', { name: 'service_mail', nullable: true, length: 50 })
+  serviceMail: string;
+
+  @Column('character varying', { name: 'mail_user', nullable: true, length: 100 })
+  mailUser: string;
+
+  @Column('character varying', { name: 'mail_password', nullable: true, length: 255 })
+  mailPassword: string;
+
   @ManyToOne(() => Roles, (roles) => roles.usuarios)
   @JoinColumn([{ name: 'fk_rol', referencedColumnName: 'idRol' }])
   fkRol: Roles;
