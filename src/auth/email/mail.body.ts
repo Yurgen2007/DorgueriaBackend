@@ -114,13 +114,14 @@ export function stockBajoEmail(nombreElemento: string, stock: number, codigoBarr
 }
 
 // Correo de producto por caducar
-export function caducidadEmail(nombreElemento: string, diasRestantes: number, fechaCaducidad: string) {
+export function caducidadEmail(nombreElemento: string, diasRestantes: number, fechaCaducidad: string, codigoBarras?: string) {
     const esUrgente = diasRestantes <= 7;
     const colorFondo = esUrgente ? '#FFF0F0' : '#FFF8E1';
     const colorBorde = esUrgente ? '#DC3545' : '#FFC107';
     const colorTexto = esUrgente ? '#721C24' : '#856404';
     const emoji = esUrgente ? '🚨' : '🗓️';
     const titulo = esUrgente ? 'URGENTE: PRODUCTO POR CADUCAR' : 'NOTIFICACIÓN DE CADUCIDAD';
+    const codigoBarrasDisplay = codigoBarras || 'No disponible';
     
     return `<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -145,6 +146,9 @@ export function caducidadEmail(nombreElemento: string, diasRestantes: number, fe
         .elemento-nombre { color: #20B2AA; font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .dias-badge { background-color: ${esUrgente ? '#DC3545' : '#FFC107'}; color: ${esUrgente ? '#FFFFFF' : '#000000'}; font-size: 24px; font-weight: bold; padding: 10px 30px; border-radius: 50px; display: inline-block; }
         .fecha-badge { background-color: #20B2AA; color: #FFFFFF; font-size: 16px; padding: 8px 20px; border-radius: 5px; display: inline-block; margin-top: 10px; }
+        .codigo-box { background-color: #E9ECEF; border-radius: 5px; padding: 10px 15px; display: inline-block; margin-top: 10px; }
+        .codigo-label { color: #6C757D; font-size: 12px; text-transform: uppercase; }
+        .codigo-valor { color: #000000; font-size: 16px; font-weight: bold; font-family: 'Courier New', monospace; }
         .stock-label { color: #6C757D; font-size: 14px; text-align: center; margin-top: 5px; }
         .action-text { color: #495057; font-size: 14px; text-align: center; margin-top: 20px; line-height: 1.6; }
         .footer { background-color: #343A40; padding: 20px; text-align: center; }
@@ -171,6 +175,12 @@ export function caducidadEmail(nombreElemento: string, diasRestantes: number, fe
             <div class="elemento-info">
                 <div class="elemento-nombre">${nombreElemento}</div>
                 <div style="text-align: center;">
+                    <div class="codigo-box">
+                        <div class="codigo-label">Código de Barras</div>
+                        <div class="codigo-valor">${codigoBarrasDisplay}</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
                     <div class="dias-badge">${diasRestantes} días</div>
                     <div class="stock-label">Para caducar</div>
                     <div style="margin-top: 15px;">

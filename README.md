@@ -3,18 +3,27 @@
 Abre la carpeta donde desea clonar el proyecto y ejecuta este comando en un cmd
 
 ```bash
-$ git clone https://github.com/migueldev2006/Backendnestjs.git
+$ git clone https://github.com/Yurgen2007/DorgueriaBackend.git
 ```
 luego de clonarlo le aparecera una carpeta "Backendnestjs" abrala con un click o en la terminal con cd + tabulador
 
-## Crear contenedor Docker
-
-Como siguiente punto es necesario llenar las variables de entorno las cuales seran utilizadas en el proyecto, tales como las credenciales de la base de datos, nota viene un .env.example de ejemplo pero debe crear su propio .env
-
-Una vez clonado el proyecto asegurese de tener Docker Desktop instalado y corriendo para luego, crear un contenedor de Docker mediante el comando en una consola powershell
-
+## Creamos el .env
+Puede utiliza este 
 ```bash
-$ docker compose up --build -d
+$ DB_PASSWORD=123
+$ DB_NAME=drogueria_db
+$ DB_HOST=localhost
+$ DB_PORT=5432
+$ DB_USERNAME=postgres
+
+#URL básica
+$ BASE_URL='http://localhost:5173'
+$ BACKEND_URL='http://localhost:3000'
+
+
+
+# JWT
+$ SECRET='Secret'
 ```
 
 ## Instalacion de dependencias 
@@ -28,7 +37,7 @@ $ npm install
 Despues pasamos a poblar la base de datos por medio de un seeder con el siguiente comando 
 
 ```bash
-$ npx nestjs-command seed:database
+$ npm run seed
 ```
 
 ## Compile y corra el proyecto

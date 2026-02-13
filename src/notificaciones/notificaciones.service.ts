@@ -450,7 +450,7 @@ export class NotificacionesService {
           await this.emailService.sendMail({
             to: admin.correo,
             subject: '🗓️ Alerta de Caducidad Proxima - FarmaMedica',
-            html: caducidadEmail(elemento.nombre, diasRestantes, elemento.fechaVencimiento),
+            html: caducidadEmail(elemento.nombre, diasRestantes, elemento.fechaVencimiento, elemento.codigoBarras),
           }, credentials);
           console.log(`Correo de caducidad enviado a ${admin.correo}`);
         } catch (error) {
