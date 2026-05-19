@@ -15,7 +15,9 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+
   app.useGlobalFilters(new HttpExceptionFilter());
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -30,6 +32,8 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'public'), {
     prefix: '/',
   });
-  await app.listen(process.env.PORT ?? 3000);
+
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
+
 bootstrap();
